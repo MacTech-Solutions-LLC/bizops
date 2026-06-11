@@ -12,6 +12,8 @@ This repo is the **first** satellite for live Hub authority. Full cutover steps 
 
 ## Smoke URLs (custom domain — 3g-01 PASS)
 
+`/api/health` and `/api/smoke/hub-mock` are public routes in `middleware.ts` so smoke curls work without a Clerk session.
+
 Base: `https://bizops.mactechsolutionsllc.com`
 
 ### Health
