@@ -9,11 +9,15 @@ import {
 /** Pre-tenant: bizops not yet in hub-client union on platform main — cast until R-2 registry. */
 export const APP_KEY = (process.env.MACTECH_APP_KEY ?? "bizops") as MacTechAppKey;
 
+export function getHubAuthorityMode(): "mock" | "live" {
+  return process.env.HUB_AUTHORITY_MODE === "live" ? "live" : "mock";
+}
+
 let cachedClient: HubAuthorityClient | undefined;
 
 export function getHubAuthorityClient(): HubAuthorityClient {
   if (cachedClient) return cachedClient;
-  const mode = process.env.HUB_AUTHORITY_MODE === "live" ? "live" : "mock";
+  const mode = getHubAuthorityMode();
   if (mode === "mock") {
     cachedClient = createHubAuthorityClient({
       mode: "mock",

@@ -10,5 +10,13 @@ if [ ! -d "$HUB_CLIENT" ]; then
   cp -R "$TMPDIR/mactech-suite-platform/packages/hub-client" "$HUB_CLIENT"
 fi
 
-(cd "$HUB_CLIENT" && npm install && npm run build)
-npm ci && npm run build
+(
+  cd "$HUB_CLIENT"
+  npm install --ignore-scripts
+  npm install --no-save typescript@5.6.3 @types/node
+  npm run build
+)
+
+# Railpack may already install deps; refresh file: hub-client without touching locked cache dir.
+npm install --no-audit --cache /tmp/npm-app-cache
+npm run build

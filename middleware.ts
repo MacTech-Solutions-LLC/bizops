@@ -4,6 +4,8 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/access-denied",
+  "/api/health",
+  "/api/smoke/hub-mock",
 ]);
 
 export default clerkMiddleware((auth, request) => {
