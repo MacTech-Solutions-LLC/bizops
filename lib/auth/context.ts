@@ -13,7 +13,7 @@ export async function requireAppAuthContext(): Promise<AppAuthContext> {
   const { userId, orgId } = auth();
   if (!userId) redirect("/sign-in");
   const hub = await resolveAppHubAccess(userId, orgId);
-  if (!hub.allowed) redirect("/access-denied");
+  if (!hub.allowed || !hub.tenant?.organizationId) redirect("/access-denied");
   return { clerkUserId: userId, clerkOrgId: orgId ?? null, hub };
 }
 
@@ -21,6 +21,6 @@ export async function getAppAuthContext(): Promise<AppAuthContext | null> {
   const { userId, orgId } = auth();
   if (!userId) return null;
   const hub = await resolveAppHubAccess(userId, orgId);
-  if (!hub.allowed) return null;
+  if (!hub.allowed || !hub.tenant?.organizationId) return null;
   return { clerkUserId: userId, clerkOrgId: orgId ?? null, hub };
 }

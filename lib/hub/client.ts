@@ -29,13 +29,17 @@ export function getHubAuthorityClient(): HubAuthorityClient {
     });
     return cachedClient;
   }
+  const serviceToken = process.env.MACTECH_HUB_SERVICE_TOKEN;
+  if (!serviceToken) {
+    throw new Error("MACTECH_HUB_SERVICE_TOKEN is required when HUB_AUTHORITY_MODE is 'live'");
+  }
   cachedClient = createHubAuthorityClient({
     mode: "live",
     live: {
       hubBaseUrl:
         process.env.MACTECH_HUB_URL ?? "https://www.suite.mactechsolutionsllc.com",
       sourceAppKey: APP_KEY,
-      serviceToken: process.env.MACTECH_HUB_SERVICE_TOKEN,
+      serviceToken,
     },
   });
   return cachedClient;

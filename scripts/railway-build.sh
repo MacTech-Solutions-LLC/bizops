@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
-if [ ! -d ../mactech-suite-platform/packages/hub-client ]; then
-  git clone --depth 1 https://github.com/MacTech-Solutions-LLC/mactech-suite-platform.git /tmp/mactech-suite-platform
+
+HUB_CLIENT="../mactech-suite-platform/packages/hub-client"
+if [ ! -d "$HUB_CLIENT" ]; then
+  TMPDIR=$(mktemp -d)
+  trap 'rm -rf "$TMPDIR"' EXIT
+  git clone --depth 1 https://github.com/MacTech-Solutions-LLC/mactech-suite-platform.git "$TMPDIR/mactech-suite-platform"
   mkdir -p ../mactech-suite-platform/packages
-  cp -R /tmp/mactech-suite-platform/packages/hub-client ../mactech-suite-platform/packages/hub-client
+  cp -R "$TMPDIR/mactech-suite-platform/packages/hub-client" "$HUB_CLIENT"
 fi
-cd ../mactech-suite-platform/packages/hub-client && npm ci && npm run build
-cd - && npm ci && npm run build
+
+(cd "$HUB_CLIENT" && npm install && npm run build)
+npm ci && npm run build
