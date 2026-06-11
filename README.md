@@ -1,6 +1,6 @@
 # MacTech BizOps
 
-Greenfield BizOps satellite ? company profile, team roster, and campaign stubs.
+Greenfield BizOps satellite — company profile, team roster, and campaign stubs.
 
 ## Auth
 
