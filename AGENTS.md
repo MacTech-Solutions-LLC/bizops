@@ -7,6 +7,7 @@
 - **Canonical appKey:** `bizops`
 - **Branch:** `agent/bizops-v1`
 - **Protected routes:** Clerk session → Hub authority snapshot → domain logic
+- **Suite uniformity:** MacTech design tokens + manifest (Phase B)
 
 ### Identity
 
