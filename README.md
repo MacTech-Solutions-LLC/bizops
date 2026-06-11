@@ -1,6 +1,6 @@
 # MacTech BizOps
 
-Greenfield BizOps satellite — company profile, team roster, and campaign stubs.
+Greenfield BizOps satellite ? company profile, team roster, and campaign stubs.
 
 ## Auth
 
@@ -15,7 +15,7 @@ npm install   # requires sibling mactech-suite-platform/packages/hub-client
 HUB_AUTHORITY_MODE=mock npm run dev
 ```
 
-Clerk keys in local `.env` only (not committed).
+Clerk keys and sign-in URL paths in local `.env` (see [`.env.example`](.env.example) and [docs/RAILWAY.md](docs/RAILWAY.md)).
 
 ## Deploy URL
 
