@@ -17,5 +17,6 @@ fi
   npm run build
 )
 
-rm -rf node_modules/.cache
-npm ci --cache /tmp/npm-cache && npm run build
+# Railpack may already install deps; refresh file: hub-client without touching locked cache dir.
+npm install --no-audit --cache /tmp/npm-app-cache
+npm run build
