@@ -1,0 +1,5 @@
+[phases.install]
+cmds = ["true"]
+
+[phases.build]
+cmds = ["bash scripts/railway-build.sh"]
