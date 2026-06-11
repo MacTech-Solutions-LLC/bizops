@@ -13,7 +13,7 @@ fi
 (
   cd "$HUB_CLIENT"
   npm install --ignore-scripts
-  npm install --no-save typescript@5.6.3
+  npm install --no-save typescript@5.6.3 @types/node
   npm run build
 )
 npm ci && npm run build
