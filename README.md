@@ -15,7 +15,22 @@ npm install   # requires sibling mactech-suite-platform/packages/hub-client
 HUB_AUTHORITY_MODE=mock npm run dev
 ```
 
-Clerk keys in local `.env` only (not committed).
+Clerk keys and sign-in URL paths in local `.env` (see [`.env.example`](.env.example) and [docs/RAILWAY.md](docs/RAILWAY.md)).
+
+**Custom domain cutover:** [docs/CLERK_CUSTOM_DOMAIN.md](docs/CLERK_CUSTOM_DOMAIN.md) — Clerk allowlist checklist for `https://bizops.mactechsolutionsllc.com`.
+
+## Deploy URL
+
+Railway dev: **https://bizops-production.up.railway.app**
+
+Smoke checks (no auth):
+
+```bash
+curl -sS https://bizops-production.up.railway.app/api/health
+curl -sS https://bizops-production.up.railway.app/api/smoke/hub-mock
+```
+
+See [docs/SMOKE.md](docs/SMOKE.md) for expected responses and local `npm run smoke`.
 
 ## Railway
 
