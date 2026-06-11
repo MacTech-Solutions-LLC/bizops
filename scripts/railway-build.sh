@@ -16,4 +16,6 @@ fi
   npm install --no-save typescript@5.6.3 @types/node
   npm run build
 )
-npm ci && npm run build
+
+rm -rf node_modules/.cache
+npm ci --cache /tmp/npm-cache && npm run build
