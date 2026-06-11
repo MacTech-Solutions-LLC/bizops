@@ -1,6 +1,6 @@
 # Clerk custom domain — BizOps
 
-Brian checklist for sign-in on the production custom hostname. **Docs only** — apply Clerk Dashboard and Railway changes manually.
+Brian's checklist for sign-in on the production custom hostname. **Docs only** — apply Clerk Dashboard and Railway changes manually.
 
 | Item | Value |
 |---|---|
