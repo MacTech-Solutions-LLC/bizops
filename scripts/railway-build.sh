@@ -5,15 +5,16 @@ HUB_CLIENT="../mactech-suite-platform/packages/hub-client"
 if [ ! -d "$HUB_CLIENT" ]; then
   TMPDIR=$(mktemp -d)
   trap 'rm -rf "$TMPDIR"' EXIT
-  git clone --depth 1 https://github.com/MacTech-Solutions-LLC/mactech-suite-platform.git "$TMPDIR/mactech-suite-platform"
+  git clone --depth 1 --branch "${PLATFORM_BRANCH:-main}" \
+    "https://${GITHUB_TOKEN:+x-access-token:$GITHUB_TOKEN@}github.com/MacTech-Solutions-LLC/mactech-suite-platform.git" \
+    "$TMPDIR/mactech-suite-platform"
   mkdir -p ../mactech-suite-platform/packages
   cp -R "$TMPDIR/mactech-suite-platform/packages/hub-client" "$HUB_CLIENT"
 fi
 
 (
   cd "$HUB_CLIENT"
-  npm install --ignore-scripts
-  npm install --no-save typescript@5.6.3 @types/node
+  npm ci --ignore-scripts
   npm run build
 )
 
