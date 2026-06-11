@@ -1,6 +1,6 @@
 # MacTech BizOps
 
-Greenfield BizOps satellite ? company profile, team roster, and campaign stubs.
+Greenfield BizOps satellite — company profile, team roster, and campaign stubs.
 
 ## Auth
 
@@ -17,7 +17,7 @@ HUB_AUTHORITY_MODE=mock npm run dev
 
 Clerk keys and sign-in URL paths in local `.env` (see [`.env.example`](.env.example) and [docs/RAILWAY.md](docs/RAILWAY.md)).
 
-**Custom domain cutover:** [docs/CLERK_CUSTOM_DOMAIN.md](docs/CLERK_CUSTOM_DOMAIN.md) ? Clerk allowlist checklist for `https://bizops.mactechsolutionsllc.com`.
+**Custom domain cutover:** [docs/CLERK_CUSTOM_DOMAIN.md](docs/CLERK_CUSTOM_DOMAIN.md) — Clerk allowlist checklist for `https://bizops.mactechsolutionsllc.com`.
 
 ## Deploy URL
 
