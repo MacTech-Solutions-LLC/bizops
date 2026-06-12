@@ -9,7 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
-    "smoke:dev": "node scripts/smoke-dev.mjs"
+    "smoke:dev": "node scripts/smoke-dev.mjs",
+    "smoke:live": "node scripts/live-hub-resolve-smoke.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
