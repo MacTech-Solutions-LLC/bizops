@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { APP_KEY, getHubAuthorityMode } from "@/lib/hub/client";
 import { prisma } from "@/lib/db/prisma";
+import pkg from "@/package.json";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -16,10 +16,9 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    status: "ok",
-    appKey: APP_KEY,
-    hubMode: getHubAuthorityMode(),
+    ok: true,
+    app: "bizops",
+    version: pkg.version,
     prismaConnected,
-    mode: prismaConnected ? "live" : "stub",
   });
 }
