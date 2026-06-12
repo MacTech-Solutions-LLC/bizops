@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   "/access-denied",
   "/api/health",
   "/api/smoke/hub-mock",
+  "/_/mactech-manifest.json",
 ]);
 
 export default clerkMiddleware((auth, request) => {

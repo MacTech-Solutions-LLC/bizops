@@ -1,0 +1,21 @@
+{
+  "appKey": "bizops",
+  "displayName": "BizOps",
+  "version": "0.1.0-phase-b",
+  "designSystem": {
+    "package": "@mactech-solutions-llc/design-tokens",
+    "version": "^0.1.0",
+    "mood": "vivid",
+    "uiPrimitives": "radix-ui",
+    "utilityPatterns": ["cva", "tailwind-merge", "clsx"]
+  },
+  "framework": {
+    "name": "next",
+    "version": "14.x"
+  },
+  "hub": {
+    "package": "@mactech/hub-client",
+    "mode": "mock"
+  },
+  "manifestVersion": "1.0.0"
+}
