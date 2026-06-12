@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model CompanyProfile {
+  id                String   @id @default(cuid())
+  hubOrganizationId String   @unique
+  legalName         String
+  dba               String?
+  cageCode          String?
+  uei               String?
+  naicsPrimary      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model TeamMember {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  hubUserId         String
+  displayName       String
+  email             String?
+  title             String?
+  role              String   @default("member")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([hubOrganizationId, hubUserId])
+  @@index([hubOrganizationId])
+}
+
+model Campaign {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  name              String
+  status            String   @default("draft")
+  description       String?
+  leadCount         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([hubOrganizationId])
+  @@index([hubOrganizationId, status])
+}
