@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
     "smoke:dev": "node scripts/smoke-dev.mjs",
-    "smoke:live": "node scripts/live-hub-resolve-smoke.mjs"
+    "smoke:live": "node scripts/live-hub-resolve-smoke.mjs",
+    "monitor:clerk": "node scripts/monitor-clerk.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
