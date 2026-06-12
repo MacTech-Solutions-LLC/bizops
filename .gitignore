@@ -9,3 +9,4 @@ out/
 
 # secrets-audit: env/key file hardening
 *.pem
+vendor/hub-client/
