@@ -1,6 +1,6 @@
 "use client";
 
-import { ClerkOrgAccountControls } from "@/components/auth/clerk-org-account-controls";
+import { SuiteAccountControls } from "@/components/auth/suite-account-controls";
 import { Building2, Home, Megaphone, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -59,7 +59,7 @@ export function BizOpsNavShell({ children }: BizOpsNavShellProps) {
             items: [{ label: "Home", href: "/", icon: <Home size={16} /> }],
           },
         ]}
-        footer={<ClerkOrgAccountControls afterSignOutUrl="/sign-in" />}
+        footer={<SuiteAccountControls afterSignOutUrl="/sign-in" />}
       />
       <main
         style={{

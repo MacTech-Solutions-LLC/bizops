@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { ClerkProvider } from "@clerk/nextjs";
 
-import { ClerkOrgBootstrap } from "@/components/auth/clerk-org-bootstrap";
+import { SuiteOrgBinder } from "@/components/auth/suite-org-binder";
 import { BizOpsNavShell } from "@/components/ui/bizops-nav-shell";
 
 import { APP_NAME } from "@/lib/constants";
@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <body data-mt-mood="vivid">
 
-          <ClerkOrgBootstrap />
+          <SuiteOrgBinder />
           <BizOpsNavShell>{children}</BizOpsNavShell>
 
         </body>
