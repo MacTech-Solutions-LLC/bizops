@@ -12,6 +12,7 @@ export type AppAuthContext = {
 export async function requireAppAuthContext(): Promise<AppAuthContext> {
   const { userId, orgId } = auth();
   if (!userId) redirect("/sign-in");
+  if (!orgId) redirect("/choose-organization");
   const hub = await resolveAppHubAccess(userId, orgId);
   if (!hub.allowed || !hub.tenant?.organizationId) redirect("/access-denied");
   return { clerkUserId: userId, clerkOrgId: orgId ?? null, hub };
