@@ -1,13 +1,13 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
+import { ClerkOrgAccountControls } from "@/components/auth/clerk-org-account-controls";
 import { Building2, Home, Megaphone, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { SidebarNav } from "./sidebar-nav";
 
-const AUTH_FREE_PREFIXES = ["/sign-in", "/sign-up", "/access-denied"];
+const AUTH_FREE_PREFIXES = ["/sign-in", "/sign-up", "/access-denied", "/choose-organization"];
 
 interface BizOpsNavShellProps {
   children: ReactNode;
@@ -59,7 +59,7 @@ export function BizOpsNavShell({ children }: BizOpsNavShellProps) {
             items: [{ label: "Home", href: "/", icon: <Home size={16} /> }],
           },
         ]}
-        footer={<UserButton afterSignOutUrl="/sign-in" />}
+        footer={<ClerkOrgAccountControls afterSignOutUrl="/sign-in" />}
       />
       <main
         style={{
