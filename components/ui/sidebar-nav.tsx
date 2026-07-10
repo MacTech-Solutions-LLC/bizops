@@ -232,7 +232,7 @@ export function SidebarNav({
           }}
         >
           {!collapsed ? (
-            <a
+            <Link
               href="/"
               className="mt-sidebar-brand font-mt-sans"
               style={{
@@ -248,7 +248,7 @@ export function SidebarNav({
               }}
             >
               {brand}
-            </a>
+            </Link>
           ) : null}
           <button
             type="button"
