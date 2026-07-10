@@ -1,5 +1,6 @@
 "use client";
 
+import { UserButton } from "@clerk/nextjs";
 import { SuiteAccountControls } from "@/components/auth/suite-account-controls";
 import { Building2, Home, Megaphone, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -7,6 +8,7 @@ import type { ReactNode } from "react";
 
 import { SidebarNav } from "./sidebar-nav";
 
+const AUTH_FREE_PREFIXES = ["/sign-in", "/sign-up", "/access-denied"];
 const AUTH_FREE_PREFIXES = ["/sign-in", "/sign-up", "/access-denied", "/choose-organization"];
 
 interface BizOpsNavShellProps {
@@ -59,6 +61,7 @@ export function BizOpsNavShell({ children }: BizOpsNavShellProps) {
             items: [{ label: "Home", href: "/", icon: <Home size={16} /> }],
           },
         ]}
+        footer={<UserButton afterSignOutUrl="/sign-in" />}
         footer={<SuiteAccountControls afterSignOutUrl="/sign-in" />}
       />
       <main
