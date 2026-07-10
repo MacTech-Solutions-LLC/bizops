@@ -5,6 +5,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/access-denied",
   "/api/health",
+  "/api/build-info",
   "/api/smoke/hub-mock",
   "/_/mactech-manifest.json",
 ]);
