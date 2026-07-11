@@ -56,7 +56,10 @@ export async function requireAppAuthContext(): Promise<AppAuthContext> {
   const orgContext = orgContextFromHubSnapshot(hub, orgId);
 
   if (!hub.allowed || !hub.tenant?.organizationId) {
-    if (orgContext.showChooseOrganization) redirect("/choose-organization");
+    // Only send operators to the org picker when they have NOT yet selected an
+    // org. If an org IS active but access is denied, show the reason — otherwise
+    // choose-organization bounces back to "/" and loops ("nothing happens").
+    if (!orgId && orgContext.showChooseOrganization) redirect("/choose-organization");
     // Surface the Hub's deny reason so users/admins can self-diagnose
     // (e.g. app_inactive vs entitlement_missing vs membership_missing).
     const reason = hub.reason ? `?reason=${encodeURIComponent(hub.reason)}` : "";
