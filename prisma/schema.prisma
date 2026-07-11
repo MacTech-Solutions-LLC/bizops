@@ -1,3 +1,14 @@
+// MacTech GovCon Ops — Prisma schema.
+//
+// Tenancy: every domain row carries `hubOrganizationId` (the MacTech Hub tenant
+// key resolved from the Clerk session). There is no local User/Org table —
+// identity is the Hub's source of truth, so actors/owners/assignees/watchers are
+// stored as opaque Hub user id strings. All queries filter on hubOrganizationId;
+// there are no cross-tenant reads.
+//
+// Legacy models (CompanyProfile, TeamMember, Campaign) are retained
+// non-destructively; Campaign is superseded by GovConOpportunity.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,6 +17,10 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ---------------------------------------------------------------------------
+// Legacy models (retained; not the core pipeline model — see GOVCON_REBUILD_AUDIT.md)
+// ---------------------------------------------------------------------------
 
 model CompanyProfile {
   id                String   @id @default(cuid())
@@ -46,4 +61,1307 @@ model Campaign {
 
   @@index([hubOrganizationId])
   @@index([hubOrganizationId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum GovConStage {
+  IDENTIFIED
+  SCREENING
+  QUALIFIED
+  CAPTURE
+  BID_NO_BID
+  PROPOSAL
+  SUBMITTED
+  EVALUATION
+  AWARDED
+  LOST
+  CANCELED
+  ARCHIVED
+}
+
+enum GovConHealth {
+  ON_TRACK
+  AT_RISK
+  CRITICAL
+  UNKNOWN
+}
+
+enum GovConPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum GovConTeamRole {
+  PRIME
+  SUBCONTRACTOR
+  UNDECIDED
+}
+
+enum GovConOpportunityType {
+  PRIME_CONTRACT
+  SUBCONTRACT
+  RFP
+  RFQ
+  RFI
+  SOURCES_SOUGHT
+  PRESOLICITATION
+  IDIQ_TASK_ORDER
+  GSA
+  SBIR
+  STTR
+  BAA
+  OTA
+  GRANT
+  TEAMING
+  OTHER
+}
+
+enum GovConCompetitionType {
+  FULL_AND_OPEN
+  SMALL_BUSINESS_SET_ASIDE
+  EIGHT_A
+  SDVOSB_SET_ASIDE
+  WOSB_SET_ASIDE
+  HUBZONE_SET_ASIDE
+  SOLE_SOURCE
+  IDIQ_TASK_ORDER
+  UNKNOWN
+}
+
+enum GovConMilestoneType {
+  BID_NO_BID_REVIEW
+  CAPTURE_REVIEW
+  NDA_DUE
+  TEAMING_AGREEMENT_DUE
+  QUESTIONS_DUE
+  INDUSTRY_DAY
+  SITE_VISIT
+  PINK_TEAM
+  RED_TEAM
+  GOLD_TEAM
+  PRICING_REVIEW
+  DRAFT_DUE
+  FINAL_PRODUCTION
+  SUBMISSION
+  ORAL_PRESENTATION
+  EXPECTED_AWARD
+  DEBRIEF
+  SBIR_ABSTRACT
+  SBIR_FULL_PROPOSAL
+  OTHER
+}
+
+enum GovConMilestoneStatus {
+  PENDING
+  SCHEDULED
+  COMPLETED
+  MISSED
+  CANCELED
+}
+
+enum GovConTaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  INTERNAL_REVIEW
+  REVISION_REQUIRED
+  APPROVED
+  COMPLETE
+}
+
+enum GovConBidOutcome {
+  PENDING
+  BID
+  CONDITIONAL_BID
+  HOLD
+  NO_BID
+}
+
+enum GovConReviewType {
+  BLUE
+  PINK
+  RED
+  GOLD
+  WHITE_GLOVE
+}
+
+enum GovConReviewStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETE
+  CANCELED
+}
+
+enum GovConSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum GovConFindingStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  WONT_FIX
+}
+
+enum GovConVolumeStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  INTERNAL_REVIEW
+  REVISION_REQUIRED
+  APPROVED
+  COMPLETE
+}
+
+enum GovConRequirementType {
+  SHALL
+  MUST
+  WILL
+  SHOULD
+  INSTRUCTION
+  EVALUATION_CRITERIA
+  INFORMATIONAL
+}
+
+enum GovConRequirementStatus {
+  UNASSIGNED
+  ASSIGNED
+  DRAFTED
+  IN_REVIEW
+  COMPLETE
+}
+
+enum GovConCaptureSectionStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  LOCKED
+}
+
+enum GovConReadinessStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  ACTIVE
+  EXPIRING_SOON
+  EXPIRED
+  NOT_APPLICABLE
+}
+
+enum GovConRiskStatus {
+  OPEN
+  MITIGATING
+  ACCEPTED
+  CLOSED
+}
+
+enum GovConOutcomeResult {
+  PENDING
+  AWARDED
+  LOST
+  NO_BID
+  CANCELED
+}
+
+enum GovConNotificationType {
+  ASSIGNMENT
+  MENTION
+  OVERDUE_TASK
+  DUE_SOON_MILESTONE
+  REVIEW_SCHEDULED
+  PARTNER_ACTION
+  READINESS_EXPIRING
+  SUBMISSION_DEADLINE
+  INACTIVE_PURSUIT
+  BID_DECISION_REQUEST
+  STAGE_CHANGE
+  COMMENT
+}
+
+enum GovConPartnerAgreementStatus {
+  NONE
+  REQUESTED
+  IN_NEGOTIATION
+  EXECUTED
+  EXPIRED
+}
+
+enum GovConBusinessSize {
+  SMALL
+  OTHER_THAN_SMALL
+  LARGE
+  UNKNOWN
+}
+
+enum GovConDocumentCategory {
+  SOLICITATION
+  AMENDMENT
+  QA
+  CAPTURE
+  PROPOSAL_DRAFT
+  FINAL_PROPOSAL
+  PRICING
+  NDA
+  TEAMING_AGREEMENT
+  SUBCONTRACT
+  CAPABILITY_STATEMENT
+  PAST_PERFORMANCE
+  RESUME
+  CERTIFICATION
+  COMPLIANCE_EVIDENCE
+  AWARD
+  DEBRIEF
+  CORRESPONDENCE
+  OTHER
+}
+
+enum GovConDocumentStatus {
+  DRAFT
+  IN_REVIEW
+  FINAL
+  SUPERSEDED
+  ARCHIVED
+}
+
+enum GovConVehicleStatus {
+  PURSUING
+  ACTIVE
+  EXPIRING
+  EXPIRED
+  INACTIVE
+}
+
+enum GovConSbirProgram {
+  SBIR
+  STTR
+}
+
+enum GovConSbirPhase {
+  PHASE_I
+  PHASE_II
+  PHASE_III
+  DIRECT_TO_PHASE_II
+}
+
+// ---------------------------------------------------------------------------
+// Reference: agencies, offices, contacts, vehicles, partners
+// ---------------------------------------------------------------------------
+
+model GovConAgency {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  name              String
+  abbreviation      String?
+  tier              String? // e.g. "cabinet", "sub-agency", "command"
+  parentAgencyId    String?
+  parentAgency      GovConAgency?  @relation("AgencyHierarchy", fields: [parentAgencyId], references: [id], onDelete: SetNull)
+  childAgencies     GovConAgency[] @relation("AgencyHierarchy")
+  website           String?
+  notes             String?
+  isDemo            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  offices       GovConOffice[]
+  contacts      GovConContact[]
+  opportunities GovConOpportunity[]
+  sbirTopics    GovConSbirTopic[]
+
+  @@unique([hubOrganizationId, name])
+  @@index([hubOrganizationId])
+}
+
+model GovConOffice {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  agencyId          String
+  agency            GovConAgency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  name              String
+  command           String?
+  location          String?
+  notes             String?
+  isDemo            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  contacts      GovConContact[]
+  opportunities GovConOpportunity[]
+
+  @@index([hubOrganizationId])
+  @@index([agencyId])
+}
+
+model GovConContact {
+  id                  String   @id @default(cuid())
+  hubOrganizationId   String
+  name                String
+  title               String?
+  organizationName    String?
+  agencyId            String?
+  agency              GovConAgency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  officeId            String?
+  office              GovConOffice? @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  email               String?
+  phone               String?
+  contactType         String? // government, teaming, industry, internal
+  acquisitionRole     String? // CO, COR, PM, technical
+  decisionRole        String? // decision-maker, influencer, gatekeeper, user
+  influence           String? // high, medium, low
+  relationshipStrength String? // strong, moderate, weak, none
+  lastInteractionAt   DateTime?
+  nextActionAt        DateTime?
+  nextAction          String?
+  meetingNotes        String?
+  sensitivityNotes    String?
+  isDemo              Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  createdBy           String?
+  updatedBy           String?
+
+  interactions GovConInteraction[]
+
+  @@index([hubOrganizationId])
+  @@index([agencyId])
+}
+
+model GovConInteraction {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  contactId         String
+  contact           GovConContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  opportunityId     String?
+  opportunity       GovConOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  occurredAt        DateTime
+  channel           String? // call, email, meeting, event
+  summary           String
+  followUp          String?
+  isDemo            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  createdBy         String?
+
+  @@index([hubOrganizationId])
+  @@index([contactId])
+  @@index([opportunityId])
+}
+
+model GovConContractVehicle {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  name              String
+  vehicleType       String? // IDIQ, GWAC, BPA, GSA Schedule, OTA
+  agency            String?
+  contractNumber    String?
+  primeHolder       String?
+  subcontractAccess Boolean  @default(false)
+  pools             String[]
+  naicsCodes        String[]
+  startDate         DateTime?
+  endDate           DateTime?
+  optionPeriods     Int?
+  ceiling           Decimal? @db.Decimal(16, 2)
+  orderingStatus    String?
+  status            GovConVehicleStatus @default(PURSUING)
+  renewalActions    String?
+  notes             String?
+  isDemo            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  opportunities GovConOpportunity[]
+
+  @@unique([hubOrganizationId, name])
+  @@index([hubOrganizationId])
+}
+
+model GovConPartner {
+  id                  String   @id @default(cuid())
+  hubOrganizationId   String
+  legalName           String
+  dba                 String?
+  uei                 String?
+  cageCode            String?
+  businessSize        GovConBusinessSize @default(UNKNOWN)
+  socioeconomicStatus String[] // 8(a), SDVOSB, WOSB, HUBZone, ...
+  naicsCapabilities   String[]
+  contractVehicles    String[]
+  facilityClearance   String?
+  keyCapabilities     String?
+  pastPerformance     String?
+  relationshipOwner   String? // hubUserId
+  proposedRole        String?
+  ndaStatus           GovConPartnerAgreementStatus @default(NONE)
+  teamingStatus       GovConPartnerAgreementStatus @default(NONE)
+  subcontractStatus   GovConPartnerAgreementStatus @default(NONE)
+  risk                String? // low, medium, high
+  notes               String?
+  isDemo              Boolean  @default(false)
+  archivedAt          DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  createdBy           String?
+  updatedBy           String?
+
+  contacts            GovConPartnerContact[]
+  opportunityPartners GovConOpportunityPartner[]
+  documents           GovConDocument[]
+
+  @@index([hubOrganizationId])
+}
+
+model GovConPartnerContact {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  partnerId         String
+  partner           GovConPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  name              String
+  title             String?
+  email             String?
+  phone             String?
+  isPrimary         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([hubOrganizationId])
+  @@index([partnerId])
+}
+
+// ---------------------------------------------------------------------------
+// Core: opportunities and their lifecycle
+// ---------------------------------------------------------------------------
+
+model GovConOpportunity {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+
+  // Identity
+  internalName       String
+  solicitationTitle  String?
+  solicitationNumber String?
+  noticeId           String?
+  type               GovConOpportunityType @default(RFP)
+  sourceSystem       String? // SAM.gov, GSA eBuy, DSIP, grants.gov
+  sourceUrl          String?
+
+  // Customer
+  agencyId           String?
+  agency             GovConAgency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  subAgency          String?
+  officeId           String?
+  office             GovConOffice? @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  command            String?
+  contractingOffice  String?
+  placeOfPerformance String?
+  setAside           String?
+  naics              String?
+  psc                String?
+  vehicleId          String?
+  vehicle            GovConContractVehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  contractType       String? // FFP, T&M, CPFF, ...
+  competitionType    GovConCompetitionType @default(UNKNOWN)
+
+  // Commercial
+  estimatedValue            Decimal? @db.Decimal(16, 2)
+  minValue                  Decimal? @db.Decimal(16, 2)
+  maxValue                  Decimal? @db.Decimal(16, 2)
+  ceiling                   Decimal? @db.Decimal(16, 2)
+  fundedValue               Decimal? @db.Decimal(16, 2)
+  periodOfPerformanceMonths Int?
+  basePeriodMonths          Int?
+  optionPeriods             Int?
+
+  // Dates
+  postedDate            DateTime?
+  responseDeadline      DateTime?
+  questionsDeadline     DateTime?
+  siteVisitDate         DateTime?
+  industryDayDate       DateTime?
+  draftSolicitationDate DateTime?
+  finalSolicitationDate DateTime?
+  proposalDeadline      DateTime?
+  expectedAwardDate     DateTime?
+  actualAwardDate       DateTime?
+  debriefDate           DateTime?
+
+  // Pursuit
+  stage                  GovConStage    @default(IDENTIFIED)
+  health                 GovConHealth   @default(UNKNOWN)
+  priority               GovConPriority @default(MEDIUM)
+  strategicFit           Int? // 0-100
+  pWin                   Int? // probability of win 0-100
+  pGo                    Int? // probability of go 0-100
+  teamRole               GovConTeamRole @default(UNDECIDED)
+  incumbent              String?
+  competitors            String[]
+  customerPainPoints     String?
+  customerHotButtons     String?
+  discriminators         String?
+  winThemes              String?
+  ghostThemes            String?
+  blackHatNotes          String?
+  solutionHypothesis     String?
+  pricingHypothesis      String?
+  keyPersonnelNeeds      String?
+  clearanceNeeds         String?
+  facilityNeeds          String?
+  complianceRequirements String?
+  bidDecisionSummary     String?
+  bidRationale           String?
+  noBidRationale         String?
+
+  // Ownership (Hub user ids)
+  captureOwnerId     String?
+  proposalManagerId  String?
+  executiveSponsorId String?
+
+  nextAction         String?
+  nextActionDueAt    DateTime?
+  lastActivityAt     DateTime?
+
+  // Concurrency + lifecycle
+  version    Int       @default(0)
+  archivedAt DateTime?
+  isDemo     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  createdBy  String?
+  updatedBy  String?
+
+  stageHistory   GovConOpportunityStageHistory[]
+  milestones     GovConMilestone[]
+  tasks          GovConTask[]
+  capturePlan    GovConCapturePlan?
+  bidDecision    GovConBidDecision?
+  proposals      GovConProposal[]
+  requirements   GovConRequirement[]
+  reviews        GovConReview[]
+  comments       GovConComment[]
+  documents      GovConDocument[]
+  risks          GovConRisk[]
+  partners       GovConOpportunityPartner[]
+  interactions   GovConInteraction[]
+  submission     GovConSubmission?
+  outcome        GovConOutcome?
+  activityEvents GovConActivityEvent[]
+  tags           GovConTagOnOpportunity[]
+  sbirTopic      GovConSbirTopic?
+
+  @@index([hubOrganizationId])
+  @@index([hubOrganizationId, stage])
+  @@index([hubOrganizationId, health])
+  @@index([hubOrganizationId, agencyId])
+  @@index([hubOrganizationId, proposalDeadline])
+  @@index([hubOrganizationId, archivedAt])
+}
+
+model GovConOpportunityStageHistory {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  opportunityId     String
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  fromStage         GovConStage?
+  toStage           GovConStage
+  changedBy         String? // hubUserId
+  note              String?
+  createdAt         DateTime @default(now())
+
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+}
+
+model GovConMilestone {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  opportunityId     String
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  type              GovConMilestoneType @default(OTHER)
+  title             String
+  dueAt             DateTime?
+  completedAt       DateTime?
+  status            GovConMilestoneStatus @default(PENDING)
+  ownerId           String? // hubUserId
+  notes             String?
+  isDemo            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+  @@index([hubOrganizationId, dueAt])
+  @@index([hubOrganizationId, status])
+}
+
+model GovConOpportunityPartner {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  opportunityId     String
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  partnerId         String
+  partner           GovConPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  role              GovConTeamRole @default(SUBCONTRACTOR)
+  workshare         Int? // percent 0-100
+  scope             String?
+  ndaStatus         GovConPartnerAgreementStatus @default(NONE)
+  teamingStatus     GovConPartnerAgreementStatus @default(NONE)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([opportunityId, partnerId])
+  @@index([hubOrganizationId])
+  @@index([partnerId])
+}
+
+// ---------------------------------------------------------------------------
+// Capture planning
+// ---------------------------------------------------------------------------
+
+model GovConCapturePlan {
+  id                       String   @id @default(cuid())
+  hubOrganizationId        String
+  opportunityId            String   @unique
+  opportunity              GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  ownerId                  String? // hubUserId
+  customerMission          String?
+  customerProblem          String?
+  acquisitionContext       String?
+  procurementHistory       String?
+  incumbentAnalysis        String?
+  competitiveLandscape     String?
+  stakeholderMap           String?
+  relationshipMap          String?
+  decisionRoles            String?
+  strengths                String?
+  weaknesses               String?
+  competitorStrengths      String?
+  competitorWeaknesses     String?
+  discriminators           String?
+  winThemes                String?
+  ghostThemes              String?
+  proofPoints              String?
+  pastPerformanceAlignment String?
+  teamingGaps              String?
+  staffingGaps             String?
+  technicalGaps            String?
+  readinessGaps            String?
+  pricingPosture           String?
+  captureActions           String?
+  version                  Int      @default(0)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  createdBy                String?
+  updatedBy                String?
+
+  sections GovConCaptureSection[]
+
+  @@index([hubOrganizationId])
+}
+
+model GovConCaptureSection {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  capturePlanId     String
+  capturePlan       GovConCapturePlan @relation(fields: [capturePlanId], references: [id], onDelete: Cascade)
+  title             String
+  body              String?
+  ownerId           String? // hubUserId
+  status            GovConCaptureSectionStatus @default(DRAFT)
+  orderIndex        Int      @default(0)
+  approvedBy        String?
+  approvedAt        DateTime?
+  lockedAt          DateTime?
+  version           Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([hubOrganizationId])
+  @@index([capturePlanId])
+}
+
+// ---------------------------------------------------------------------------
+// Bid / no-bid decision
+// ---------------------------------------------------------------------------
+
+model GovConBidDecision {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  opportunityId     String   @unique
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  outcome           GovConBidOutcome @default(PENDING)
+  weightedScore     Decimal? @db.Decimal(6, 2)
+  maxScore          Decimal? @db.Decimal(6, 2)
+  criteriaJson      Json? // per-criterion score + weight snapshot
+  rationale         String?
+  decidedBy         String? // hubUserId who recorded the final decision
+  decidedAt         DateTime?
+  requiredApprovers String[] // hubUserIds
+  version           Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  reviews GovConBidDecisionReview[]
+
+  @@index([hubOrganizationId])
+}
+
+model GovConBidDecisionReview {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  bidDecisionId     String
+  bidDecision       GovConBidDecision @relation(fields: [bidDecisionId], references: [id], onDelete: Cascade)
+  reviewerId        String // hubUserId
+  vote              GovConBidOutcome @default(PENDING)
+  score             Decimal? @db.Decimal(6, 2)
+  comments          String?
+  approved          Boolean?
+  reviewedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([bidDecisionId, reviewerId])
+  @@index([hubOrganizationId])
+}
+
+// ---------------------------------------------------------------------------
+// Proposal room
+// ---------------------------------------------------------------------------
+
+model GovConProposal {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  opportunityId     String
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  title             String
+  managerId         String? // hubUserId
+  dueAt             DateTime?
+  status            GovConVolumeStatus @default(NOT_STARTED)
+  notes             String?
+  version           Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  volumes      GovConProposalVolume[]
+  requirements GovConRequirement[]
+  reviews      GovConReview[]
+  tasks        GovConTask[]
+
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+}
+
+model GovConProposalVolume {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  proposalId        String
+  proposal          GovConProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  name              String
+  ownerId           String? // hubUserId
+  reviewerId        String? // hubUserId
+  contributors      String[] // hubUserIds
+  status            GovConVolumeStatus @default(NOT_STARTED)
+  dueAt             DateTime?
+  pageLimit         Int?
+  currentPages      Int?
+  outline           String?
+  sourceMaterial    String?
+  draftLocation     String?
+  orderIndex        Int      @default(0)
+  version           Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  requirements GovConRequirement[]
+
+  @@index([hubOrganizationId])
+  @@index([proposalId])
+}
+
+model GovConRequirement {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  opportunityId     String
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  proposalId        String?
+  proposal          GovConProposal? @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+  volumeId          String?
+  volume            GovConProposalVolume? @relation(fields: [volumeId], references: [id], onDelete: SetNull)
+  refId             String // requirement id, e.g. L.3.2 / M.1
+  sourceSection     String?
+  text              String
+  requirementType   GovConRequirementType @default(SHALL)
+  mandatory         Boolean  @default(true)
+  responseSection   String?
+  ownerId           String? // hubUserId
+  status            GovConRequirementStatus @default(UNASSIGNED)
+  evidence          String?
+  reviewerId        String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+  @@index([proposalId])
+  @@index([hubOrganizationId, status])
+}
+
+model GovConReview {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  opportunityId     String
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  proposalId        String?
+  proposal          GovConProposal? @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+  type              GovConReviewType @default(PINK)
+  scheduledAt       DateTime?
+  scope             String?
+  reviewers         String[] // hubUserIds
+  instructions      String?
+  status            GovConReviewStatus @default(SCHEDULED)
+  closedAt          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  findings GovConReviewFinding[]
+
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+}
+
+model GovConReviewFinding {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  reviewId          String
+  review            GovConReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  summary           String
+  detail            String?
+  severity          GovConSeverity @default(MEDIUM)
+  ownerId           String? // hubUserId
+  resolution        String?
+  status            GovConFindingStatus @default(OPEN)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([hubOrganizationId])
+  @@index([reviewId])
+}
+
+// ---------------------------------------------------------------------------
+// Tasks and collaboration
+// ---------------------------------------------------------------------------
+
+model GovConTask {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  title             String
+  description       String?
+  opportunityId     String?
+  opportunity       GovConOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  proposalId        String?
+  proposal          GovConProposal? @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+  proposalVolume    String?
+  assigneeId        String? // hubUserId
+  creatorId         String? // hubUserId
+  watchers          String[] // hubUserIds
+  priority          GovConPriority @default(MEDIUM)
+  status            GovConTaskStatus @default(TODO)
+  startDate         DateTime?
+  dueAt             DateTime?
+  completedAt       DateTime?
+  checklistJson     Json? // [{ text, done }]
+  tags              String[]
+  orderIndex        Int      @default(0)
+  version           Int      @default(0)
+  isDemo            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  comments     GovConComment[]
+  dependencies GovConTaskDependency[] @relation("TaskDependent")
+  dependents   GovConTaskDependency[] @relation("TaskPrerequisite")
+
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+  @@index([hubOrganizationId, status])
+  @@index([hubOrganizationId, assigneeId])
+  @@index([hubOrganizationId, dueAt])
+}
+
+model GovConTaskDependency {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  taskId            String
+  task              GovConTask @relation("TaskDependent", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTaskId   String
+  dependsOnTask     GovConTask @relation("TaskPrerequisite", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([taskId, dependsOnTaskId])
+  @@index([hubOrganizationId])
+}
+
+model GovConComment {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  authorId          String // hubUserId
+  body              String
+  // Attach to any entity via optional typed FKs + a generic pair for the rest.
+  opportunityId     String?
+  opportunity       GovConOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  taskId            String?
+  task              GovConTask? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  entityType        String? // capture_section, review_finding, proposal_volume, ...
+  entityId          String?
+  parentCommentId   String?
+  parentComment     GovConComment? @relation("CommentThread", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies           GovConComment[] @relation("CommentThread")
+  editedAt          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  mentions GovConMention[]
+
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+  @@index([taskId])
+  @@index([entityType, entityId])
+}
+
+model GovConMention {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  commentId         String
+  comment           GovConComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  mentionedUserId   String // hubUserId
+  createdAt         DateTime @default(now())
+
+  @@index([hubOrganizationId])
+  @@index([mentionedUserId])
+  @@index([commentId])
+}
+
+model GovConNotification {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  recipientId       String // hubUserId
+  type              GovConNotificationType
+  title             String
+  body              String?
+  entityType        String?
+  entityId          String?
+  opportunityId     String?
+  link              String?
+  readAt            DateTime?
+  actorId           String? // hubUserId who triggered it
+  createdAt         DateTime @default(now())
+
+  @@index([hubOrganizationId])
+  @@index([hubOrganizationId, recipientId, readAt])
+}
+
+// ---------------------------------------------------------------------------
+// SBIR / STTR
+// ---------------------------------------------------------------------------
+
+model GovConSbirTopic {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  program           GovConSbirProgram @default(SBIR)
+  component         String?
+  agencyId          String?
+  agency            GovConAgency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  topicNumber       String
+  topicTitle        String
+  phase             GovConSbirPhase @default(PHASE_I)
+  preReleaseDate    DateTime?
+  openDate          DateTime?
+  questionsDeadline DateTime?
+  closeDate         DateTime?
+  technicalPoc      String?
+  contractingPoc    String?
+  objective         String?
+  description       String?
+  phaseIExpectations   String?
+  phaseIIExpectations  String?
+  phaseIIITransition   String?
+  trl               Int?
+  deliverables      String?
+  awardRangeMin     Decimal? @db.Decimal(16, 2)
+  awardRangeMax     Decimal? @db.Decimal(16, 2)
+  periodOfPerformanceMonths Int?
+  eligibilityNotes  String?
+  dataRightsNotes   String?
+  requiredRegistrations String[]
+  submissionPortal  String?
+  sourceUrl         String?
+  stage             GovConStage @default(IDENTIFIED)
+  opportunityId     String?  @unique
+  opportunity       GovConOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  isDemo            Boolean  @default(false)
+  archivedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  assessment GovConSbirAssessment?
+
+  @@index([hubOrganizationId])
+  @@index([hubOrganizationId, closeDate])
+}
+
+model GovConSbirAssessment {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  sbirTopicId       String   @unique
+  sbirTopic         GovConSbirTopic @relation(fields: [sbirTopicId], references: [id], onDelete: Cascade)
+  // Weighted scorecard criteria (0-5 each). Weighted total computed in service.
+  missionAlignment     Int?
+  technicalNovelty     Int?
+  feasibility          Int?
+  existingIp           Int?
+  piAvailability       Int?
+  commercialization    Int?
+  phaseIiiPathway      Int?
+  transitionSponsor    Int?
+  pastPerformance      Int?
+  teamCompleteness     Int?
+  timeRemaining        Int?
+  proposalEffort       Int?
+  expectedAwardValue   Decimal? @db.Decimal(16, 2)
+  competitiveIntensity Int?
+  weightedScore        Decimal? @db.Decimal(6, 2)
+  recommendation       String? // pursue, watch, pass
+  technicalConcept     String?
+  workPlan             String?
+  keyPersonnel         String?
+  commercializationPlan String?
+  transitionPlan       String?
+  dataRights           String?
+  version           Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([hubOrganizationId])
+}
+
+// ---------------------------------------------------------------------------
+// Documents, readiness, risks, submission, outcome
+// ---------------------------------------------------------------------------
+
+model GovConDocument {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  name              String
+  category          GovConDocumentCategory @default(OTHER)
+  version           String?
+  status            GovConDocumentStatus @default(DRAFT)
+  ownerId           String? // hubUserId
+  opportunityId     String?
+  opportunity       GovConOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  partnerId         String?
+  partner           GovConPartner? @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  proposalId        String?
+  storageProvider   String? // s3, azure_blob, google_drive, sharepoint, railway_volume, github, local
+  storageReference  String? // key / path / url — never the binary itself
+  contentType       String?
+  sizeBytes         Int?
+  checksum          String?
+  uploadedBy        String? // hubUserId
+  uploadedAt        DateTime?
+  effectiveDate     DateTime?
+  expirationDate    DateTime?
+  sensitivityMarking String? // CUI, PROPRIETARY, PUBLIC, ...
+  notes             String?
+  isDemo            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+  @@index([partnerId])
+  @@index([hubOrganizationId, category])
+}
+
+model GovConReadinessItem {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  category          String // registration, certification, cyber, clearance, insurance, vehicle
+  name              String // SAM.gov, UEI, CAGE, CMMC, NIST 800-171, ...
+  status            GovConReadinessStatus @default(NOT_STARTED)
+  ownerId           String? // hubUserId
+  issuer            String?
+  identifier        String?
+  effectiveDate     DateTime?
+  expirationDate    DateTime?
+  renewalDate       DateTime?
+  evidenceLink      String?
+  reminderLeadDays  Int?     @default(30)
+  notes             String?
+  isDemo            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@unique([hubOrganizationId, name])
+  @@index([hubOrganizationId])
+  @@index([hubOrganizationId, status])
+  @@index([hubOrganizationId, expirationDate])
+}
+
+model GovConRisk {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  opportunityId     String
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?
+  category          String? // technical, staffing, pricing, compliance, schedule, teaming
+  severity          GovConSeverity @default(MEDIUM)
+  likelihood        String? // high, medium, low
+  mitigation        String?
+  ownerId           String? // hubUserId
+  status            GovConRiskStatus @default(OPEN)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+}
+
+model GovConSubmission {
+  id                 String   @id @default(cuid())
+  hubOrganizationId  String
+  opportunityId      String   @unique
+  opportunity        GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  submittedAt        DateTime?
+  method             String? // portal, email, hand delivery
+  portal             String?
+  confirmationNumber String?
+  submittedBy        String? // hubUserId
+  proposedValue      Decimal? @db.Decimal(16, 2)
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  createdBy          String?
+  updatedBy          String?
+
+  @@index([hubOrganizationId])
+}
+
+model GovConOutcome {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  opportunityId     String   @unique
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  result            GovConOutcomeResult @default(PENDING)
+  awardedValue      Decimal? @db.Decimal(16, 2)
+  awardedTo         String? // winner if lost
+  decidedAt         DateTime?
+  reason            String? // why win/loss/no-bid
+  lessonsLearned    String?
+  debriefRequested  Boolean  @default(false)
+  debriefDate       DateTime?
+  debriefNotes      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([hubOrganizationId])
+}
+
+// ---------------------------------------------------------------------------
+// Saved views, tags, activity
+// ---------------------------------------------------------------------------
+
+model GovConSavedView {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  ownerId           String // hubUserId
+  entity            String // opportunities, tasks, requirements, ...
+  name              String
+  configJson        Json // filters, sort, columns
+  isShared          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([hubOrganizationId])
+  @@index([hubOrganizationId, entity])
+}
+
+model GovConTag {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  name              String
+  color             String?
+  createdAt         DateTime @default(now())
+
+  opportunities GovConTagOnOpportunity[]
+
+  @@unique([hubOrganizationId, name])
+  @@index([hubOrganizationId])
+}
+
+model GovConTagOnOpportunity {
+  hubOrganizationId String
+  tagId             String
+  tag               GovConTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  opportunityId     String
+  opportunity       GovConOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@id([tagId, opportunityId])
+  @@index([hubOrganizationId])
+  @@index([opportunityId])
+}
+
+model GovConActivityEvent {
+  id                String   @id @default(cuid())
+  hubOrganizationId String
+  actorId           String? // hubUserId
+  action            String // opportunity.created, stage.changed, owner.changed, ...
+  eventCategory     String? // capture, org, user, system, security
+  entityType        String
+  entityId          String
+  opportunityId     String?
+  opportunity       GovConOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  summary           String?
+  beforeJson        Json?
+  afterJson         Json?
+  requestId         String?
+  createdAt         DateTime @default(now())
+
+  @@index([hubOrganizationId])
+  @@index([hubOrganizationId, createdAt])
+  @@index([opportunityId])
+  @@index([entityType, entityId])
 }
