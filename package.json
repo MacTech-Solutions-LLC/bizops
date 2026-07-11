@@ -10,7 +10,7 @@
     "prepare:hub-client": "node scripts/run-prepare-hub-client.mjs",
     "prebuild": "npm run prepare:hub-client",
     "build": "prisma generate && next build",
-    "start": "prisma migrate deploy && next start",
+    "start": "bash scripts/railway-start.sh",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "node --conditions=import --import tsx --test tests/**/*.test.ts",
