@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useOrganizationList } from "@clerk/nextjs";
 import { Building2, ArrowRight } from "lucide-react";
+import { selectOrganizationAction } from "@/app/choose-organization/actions";
 
 /**
  * Explicit organization picker. Replaces Clerk's <OrganizationList>, whose
@@ -29,11 +30,12 @@ export function OrgPicker() {
     setBusyId(orgId);
     setError(null);
     try {
-      await setActive({ organization: orgId });
-      // Hard navigation: a full page load guarantees the server re-reads the
-      // Clerk session cookie with the newly-active org (a soft router push can
-      // race the cookie update and land back here).
-      window.location.assign("/dashboard");
+      // Update Clerk's client-side active org (keeps the topbar switcher in
+      // sync), then record it server-side and continue — the server action's
+      // cookie is what the server reads on the next request, avoiding the Clerk
+      // SSR propagation race.
+      await setActive({ organization: orgId }).catch(() => {});
+      await selectOrganizationAction(orgId);
     } catch {
       setError("Could not select that organization. Please try again.");
       setBusyId(null);
