@@ -107,3 +107,83 @@ export const TASK_STATUSES: Option[] = [
   { value: "APPROVED", label: "Approved" },
   { value: "COMPLETE", label: "Complete" },
 ];
+
+// --- Slices 6+7: SBIR, partners, vehicles, contacts, readiness --------------
+
+export const SBIR_PROGRAMS: Option[] = [
+  { value: "SBIR", label: "SBIR" },
+  { value: "STTR", label: "STTR" },
+];
+
+export const SBIR_PHASES: Option[] = [
+  { value: "PHASE_I", label: "Phase I" },
+  { value: "PHASE_II", label: "Phase II" },
+  { value: "PHASE_III", label: "Phase III" },
+  { value: "DIRECT_TO_PHASE_II", label: "Direct to Phase II" },
+];
+
+export const SBIR_RECOMMENDATIONS: Option[] = [
+  { value: "pursue", label: "Pursue" },
+  { value: "watch", label: "Watch" },
+  { value: "pass", label: "Pass" },
+];
+
+/**
+ * SBIR fit scorecard criteria. Weights mirror
+ * `SBIR_CRITERIA_WEIGHTS` in lib/domain/metrics.ts (kept client-safe here so the
+ * scorecard editor never imports the Prisma client). The service is the source of
+ * truth for the computed weighted score via `scoreSbirAssessment`.
+ */
+export interface SbirCriterion {
+  key: string;
+  label: string;
+  weight: number;
+  hint?: string;
+}
+export const SBIR_CRITERIA: SbirCriterion[] = [
+  { key: "missionAlignment", label: "Mission alignment", weight: 3 },
+  { key: "technicalNovelty", label: "Technical novelty", weight: 3 },
+  { key: "feasibility", label: "Feasibility", weight: 3 },
+  { key: "existingIp", label: "Existing IP", weight: 2 },
+  { key: "piAvailability", label: "PI availability", weight: 2 },
+  { key: "commercialization", label: "Commercialization", weight: 3 },
+  { key: "phaseIiiPathway", label: "Phase III pathway", weight: 2 },
+  { key: "transitionSponsor", label: "Transition sponsor", weight: 2 },
+  { key: "pastPerformance", label: "Past performance", weight: 2 },
+  { key: "teamCompleteness", label: "Team completeness", weight: 2 },
+  { key: "timeRemaining", label: "Time remaining", weight: 1 },
+  { key: "proposalEffort", label: "Proposal effort (lower is better)", weight: 1 },
+  { key: "competitiveIntensity", label: "Competitive intensity", weight: 1 },
+];
+
+export const BUSINESS_SIZES: Option[] = [
+  { value: "SMALL", label: "Small" },
+  { value: "OTHER_THAN_SMALL", label: "Other Than Small" },
+  { value: "LARGE", label: "Large" },
+  { value: "UNKNOWN", label: "Unknown" },
+];
+
+export const AGREEMENT_STATUSES: Option[] = [
+  { value: "NONE", label: "None" },
+  { value: "REQUESTED", label: "Requested" },
+  { value: "IN_NEGOTIATION", label: "In Negotiation" },
+  { value: "EXECUTED", label: "Executed" },
+  { value: "EXPIRED", label: "Expired" },
+];
+
+export const VEHICLE_STATUSES: Option[] = [
+  { value: "PURSUING", label: "Pursuing" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "EXPIRING", label: "Expiring" },
+  { value: "EXPIRED", label: "Expired" },
+  { value: "INACTIVE", label: "Inactive" },
+];
+
+export const READINESS_STATUSES: Option[] = [
+  { value: "NOT_STARTED", label: "Not Started" },
+  { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "EXPIRING_SOON", label: "Expiring Soon" },
+  { value: "EXPIRED", label: "Expired" },
+  { value: "NOT_APPLICABLE", label: "N/A" },
+];

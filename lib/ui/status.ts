@@ -148,6 +148,34 @@ export const AGREEMENT_STYLES: Record<string, StatusStyle> = {
   EXPIRED: make("Expired", "red"),
 };
 
+export const VEHICLE_STATUS_STYLES: Record<string, StatusStyle> = {
+  PURSUING: make("Pursuing", "blue"),
+  ACTIVE: make("Active", "green"),
+  EXPIRING: make("Expiring", "amber"),
+  EXPIRED: make("Expired", "red"),
+  INACTIVE: make("Inactive", "slate"),
+};
+
+export const BUSINESS_SIZE_STYLES: Record<string, StatusStyle> = {
+  SMALL: make("Small", "teal"),
+  OTHER_THAN_SMALL: make("Other Than Small", "violet"),
+  LARGE: make("Large", "slate"),
+  UNKNOWN: make("Unknown", "slate"),
+};
+
+export const SBIR_RECOMMENDATION_STYLES: Record<string, StatusStyle> = {
+  pursue: make("Pursue", "green"),
+  watch: make("Watch", "amber"),
+  pass: make("Pass", "red"),
+};
+
+export const EXPIRY_STYLES: Record<string, StatusStyle> = {
+  ok: make("OK", "green"),
+  expiring_soon: make("Expiring Soon", "amber"),
+  expired: make("Expired", "red"),
+  none: make("No expiry", "slate"),
+};
+
 export const BID_OUTCOME_STYLES: Record<string, StatusStyle> = {
   PENDING: make("Pending", "slate"),
   BID: make("Bid", "green"),
