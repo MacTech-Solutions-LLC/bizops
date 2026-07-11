@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
+import { clearOrganizationAction } from "@/app/choose-organization/actions";
 
 /** Human explanation + remediation for each Hub authority deny reason. */
 const REASONS: Record<string, { title: string; detail: string; fix: string }> = {
@@ -109,12 +110,16 @@ export default function AccessDeniedPage({
           </p>
         ) : null}
         <div className="mt-6 flex gap-2">
-          <Link
-            href="/choose-organization"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Choose organization
-          </Link>
+          {/* Clears the server-side org selection so the picker is shown again
+              (avoids looping when a previously-selected org is denied). */}
+          <form action={clearOrganizationAction}>
+            <button
+              type="submit"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Choose organization
+            </button>
+          </form>
           <Link
             href="/dashboard"
             className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
