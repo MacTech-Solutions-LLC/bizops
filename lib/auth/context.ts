@@ -51,13 +51,16 @@ export async function requireAppAuthContext(): Promise<AppAuthContext> {
 
   const hub = await safeResolveHub(userId, orgId ?? null);
   // Hub unreachable/errored → don't crash; send to a safe page.
-  if (!hub) redirect("/access-denied");
+  if (!hub) redirect("/access-denied?reason=hub_unavailable");
 
   const orgContext = orgContextFromHubSnapshot(hub, orgId);
 
   if (!hub.allowed || !hub.tenant?.organizationId) {
     if (orgContext.showChooseOrganization) redirect("/choose-organization");
-    redirect("/access-denied");
+    // Surface the Hub's deny reason so users/admins can self-diagnose
+    // (e.g. app_inactive vs entitlement_missing vs membership_missing).
+    const reason = hub.reason ? `?reason=${encodeURIComponent(hub.reason)}` : "";
+    redirect(`/access-denied${reason}`);
   }
 
   if (!orgId && orgContext.showChooseOrganization) {
