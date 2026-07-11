@@ -1,0 +1,52 @@
+[data-mt-mood="quiet"] {
+  --mt-bg:        #FAFAF8;
+  --mt-bg-2:      #F4F4F1;
+  --mt-bg-3:      #ECECE7;
+  --mt-surface-1: rgb(0 0 0 / 0.02);
+  --mt-surface-2: rgb(0 0 0 / 0.04);
+  --mt-surface-3: rgb(0 0 0 / 0.06);
+  --mt-surface-4: rgb(0 0 0 / 0.09);
+  --mt-hairline:   rgb(0 0 0 / 0.08);
+  --mt-hairline-2: rgb(0 0 0 / 0.12);
+  --mt-hairline-3: rgb(0 0 0 / 0.18);
+
+  --mt-text:   #1A1D24;
+  --mt-text-2: #4A4F5B;
+  --mt-text-3: #6E7280;
+  --mt-text-4: #9AA0A8;
+
+  --mt-accent:    #5B6CFF;
+  --mt-accent-2:  #6C7080;
+  --mt-accent-3:  #5B6CFF;
+  --mt-on-accent: #FFFFFF;
+
+  --mt-success: #2EA66D;
+  --mt-warning: #C77F2F;
+  --mt-danger:  #C24A4A;
+
+  --mt-glow:        rgb(91 108 255 / 0.18);
+  --mt-glow-2:      rgb(91 108 255 / 0.18);
+  --mt-soft-accent: rgb(91 108 255 / 0.06);
+  --mt-particle-h:  232;
+  --mt-particle-s:  85%;
+  --mt-particle-l:  55%;
+
+  --mt-radius-1: 4px;
+  --mt-radius-2: 6px;
+  --mt-radius-3: 8px;
+  --mt-radius-4: 12px;
+
+  --mt-font-sans:  "Inter Tight", system-ui, sans-serif;
+  --mt-font-mono:  "JetBrains Mono", ui-monospace, monospace;
+  --mt-font-serif: "Source Serif 4", Georgia, serif;
+
+  --mt-ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --mt-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --mt-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --mt-mesh-1: none;
+  --mt-mesh-2: none;
+  --mt-mesh-3: none;
+
+  color-scheme: light;
+}
