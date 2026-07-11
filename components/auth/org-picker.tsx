@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useOrganizationList } from "@clerk/nextjs";
 import { Building2, ArrowRight } from "lucide-react";
 
@@ -16,7 +15,6 @@ export function OrgPicker() {
   const { isLoaded, setActive, userMemberships } = useOrganizationList({
     userMemberships: { infinite: true },
   });
-  const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,10 +30,10 @@ export function OrgPicker() {
     setError(null);
     try {
       await setActive({ organization: orgId });
-      // Refresh so the server component re-reads the session with the new org,
-      // then advance to the workspace.
-      router.refresh();
-      router.replace("/dashboard");
+      // Hard navigation: a full page load guarantees the server re-reads the
+      // Clerk session cookie with the newly-active org (a soft router push can
+      // race the cookie update and land back here).
+      window.location.assign("/dashboard");
     } catch {
       setError("Could not select that organization. Please try again.");
       setBusyId(null);
