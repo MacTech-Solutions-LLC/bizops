@@ -1,0 +1,52 @@
+[data-mt-mood="editorial"] {
+  --mt-bg:        #F5EFE6;
+  --mt-bg-2:      #EDE5D8;
+  --mt-bg-3:      #E4DAC9;
+  --mt-surface-1: rgb(50 30 0 / 0.02);
+  --mt-surface-2: rgb(50 30 0 / 0.04);
+  --mt-surface-3: rgb(50 30 0 / 0.06);
+  --mt-surface-4: rgb(50 30 0 / 0.09);
+  --mt-hairline:   rgb(50 30 0 / 0.10);
+  --mt-hairline-2: rgb(50 30 0 / 0.16);
+  --mt-hairline-3: rgb(50 30 0 / 0.22);
+
+  --mt-text:   #2A1F12;
+  --mt-text-2: #5B4A36;
+  --mt-text-3: #8A7860;
+  --mt-text-4: #B5A88E;
+
+  --mt-accent:    #B5532A;
+  --mt-accent-2:  #6B7B3F;
+  --mt-accent-3:  #B5532A;
+  --mt-on-accent: #F5EFE6;
+
+  --mt-success: #6B7B3F;
+  --mt-warning: #C77F2F;
+  --mt-danger:  #A4332E;
+
+  --mt-glow:        rgb(181 83 42 / 0.20);
+  --mt-glow-2:      rgb(181 83 42 / 0.20);
+  --mt-soft-accent: rgb(181 83 42 / 0.08);
+  --mt-particle-h:  18;
+  --mt-particle-s:  62%;
+  --mt-particle-l:  50%;
+
+  --mt-radius-1: 2px;
+  --mt-radius-2: 2px;
+  --mt-radius-3: 4px;
+  --mt-radius-4: 6px;
+
+  --mt-font-sans:  "DM Sans", system-ui, sans-serif;
+  --mt-font-mono:  "JetBrains Mono", ui-monospace, monospace;
+  --mt-font-serif: "Fraunces", Georgia, serif;
+
+  --mt-ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --mt-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --mt-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --mt-mesh-1: none;
+  --mt-mesh-2: none;
+  --mt-mesh-3: none;
+
+  color-scheme: light;
+}

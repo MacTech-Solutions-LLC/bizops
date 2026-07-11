@@ -1,0 +1,52 @@
+[data-mt-mood="brutalist"] {
+  --mt-bg:        #FFFFFF;
+  --mt-bg-2:      #F0F0F0;
+  --mt-bg-3:      #E0E0E0;
+  --mt-surface-1: #FFFFFF;
+  --mt-surface-2: #F8F8F8;
+  --mt-surface-3: #F0F0F0;
+  --mt-surface-4: #E8E8E8;
+  --mt-hairline:   #000000;
+  --mt-hairline-2: #000000;
+  --mt-hairline-3: #000000;
+
+  --mt-text:   #000000;
+  --mt-text-2: #1A1A1A;
+  --mt-text-3: #4A4A4A;
+  --mt-text-4: #7A7A7A;
+
+  --mt-accent:    #FF3B00;
+  --mt-accent-2:  #000000;
+  --mt-accent-3:  #FF3B00;
+  --mt-on-accent: #FFFFFF;
+
+  --mt-success: #00A030;
+  --mt-warning: #FFA000;
+  --mt-danger:  #FF0000;
+
+  --mt-glow:        transparent;
+  --mt-glow-2:      transparent;
+  --mt-soft-accent: rgb(255 59 0 / 0.10);
+  --mt-particle-h:  14;
+  --mt-particle-s:  100%;
+  --mt-particle-l:  50%;
+
+  --mt-radius-1: 0px;
+  --mt-radius-2: 0px;
+  --mt-radius-3: 0px;
+  --mt-radius-4: 0px;
+
+  --mt-font-sans:  "JetBrains Mono", ui-monospace, monospace;
+  --mt-font-mono:  "JetBrains Mono", ui-monospace, monospace;
+  --mt-font-serif: "JetBrains Mono", ui-monospace, monospace;
+
+  --mt-ease-out:    linear;
+  --mt-ease-spring: linear;
+  --mt-ease-in-out: linear;
+
+  --mt-mesh-1: none;
+  --mt-mesh-2: none;
+  --mt-mesh-3: none;
+
+  color-scheme: light;
+}

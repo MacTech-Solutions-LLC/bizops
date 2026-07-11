@@ -1,0 +1,57 @@
+/* Apply via `data-mt-mood="vivid"` on <html>, <body>, or any subtree.
+   The bare :root selector is intentionally NOT included so the mood
+   never leaks globally when imported into a multi-mood app. To use
+   Vivid as the global default, set `data-mt-mood="vivid"` on <html>. */
+
+[data-mt-mood="vivid"] {
+  --mt-bg:        #06070D;
+  --mt-bg-2:      #0A0C16;
+  --mt-bg-3:      #0E1120;
+  --mt-surface-1: rgb(255 255 255 / 0.022);
+  --mt-surface-2: rgb(255 255 255 / 0.04);
+  --mt-surface-3: rgb(255 255 255 / 0.06);
+  --mt-surface-4: rgb(255 255 255 / 0.09);
+  --mt-hairline:   rgb(255 255 255 / 0.06);
+  --mt-hairline-2: rgb(255 255 255 / 0.10);
+  --mt-hairline-3: rgb(255 255 255 / 0.16);
+
+  --mt-text:   #F4F6FB;
+  --mt-text-2: #B7BCCB;
+  --mt-text-3: #7C8195;
+  --mt-text-4: #4E5366;
+
+  --mt-accent:    #00E5FF;
+  --mt-accent-2:  #7C5CFF;
+  --mt-accent-3:  #FF5BD0;
+  --mt-on-accent: #04121A;
+
+  --mt-success: #74F094;
+  --mt-warning: #FFB454;
+  --mt-danger:  #FF6B8A;
+
+  --mt-glow:        rgb(0 229 255 / 0.4);
+  --mt-glow-2:      rgb(124 92 255 / 0.4);
+  --mt-soft-accent: rgb(0 229 255 / 0.08);
+  --mt-particle-h:  184;
+  --mt-particle-s:  100%;
+  --mt-particle-l:  65%;
+
+  --mt-radius-1: 6px;
+  --mt-radius-2: 10px;
+  --mt-radius-3: 14px;
+  --mt-radius-4: 20px;
+
+  --mt-font-sans:  "Geist", system-ui, sans-serif;
+  --mt-font-mono:  "Geist Mono", ui-monospace, monospace;
+  --mt-font-serif: "Instrument Serif", Georgia, serif;
+
+  --mt-ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --mt-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --mt-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --mt-mesh-1: radial-gradient(1100px 600px at 80% -10%, rgb(0 229 255 / 0.10), transparent 60%);
+  --mt-mesh-2: radial-gradient(900px 600px at -10% 30%, rgb(124 92 255 / 0.10), transparent 60%);
+  --mt-mesh-3: radial-gradient(700px 500px at 50% 110%, rgb(255 91 208 / 0.06), transparent 60%);
+
+  color-scheme: dark;
+}

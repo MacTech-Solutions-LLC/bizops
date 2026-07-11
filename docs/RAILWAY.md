@@ -7,8 +7,11 @@ gitignored; `.env.example` documents names only.
 
 - **Build:** `scripts/railway-build.sh` → provisions `@mactech/hub-client`
   (`prepare-hub-client.sh`) → `npm install` → `prisma generate` → `next build`.
-  Installing GitHub-Packages deps (`@mactech-solutions-llc/design-tokens`) requires
-  `NODE_AUTH_TOKEN` with `read:packages` during install.
+  The build is self-contained: `@mactech-solutions-llc/design-tokens` is vendored
+  at `vendor/design-tokens` (a `file:` dependency), so **no GitHub-Packages token
+  is required at build**. Pin the builder to **Nixpacks** (`railway.json`) so the
+  install phase is a no-op and `railway-build.sh` runs a lenient `npm install`
+  (Railpack's strict `npm ci` is not cross-platform-lockfile safe here).
 - **Start:** `npm start` → `prisma migrate deploy && next start` (non-interactive;
   no destructive auto-seed). Migrations are applied on boot; the demo seed
   (`npm run db:seed`) is **manual only** and refuses to run in production unless
@@ -39,7 +42,6 @@ the browser bundle (`NEXT_PUBLIC_*`, non-secret) · **Server**: server-only ·
 | `MACTECH_HUB_URL` | Opt | Server | Both | Hub base URL (default `https://www.suite.mactechsolutionsllc.com`). |
 | `MACTECH_HUB_SERVICE_TOKEN` | Req in `live` | Server / Secret | Prod | Hub ApiKey scoped `app_authority_resolve` + `audit_ingest`, tagged `bizops`. |
 | `MACTECH_APP_KEY` | Opt | Server | Both | Must be `bizops`. |
-| `NODE_AUTH_TOKEN` | **Req at build** | Server / Secret | Both (CI/build) | GitHub Packages token (`read:packages`) for `@mactech-solutions-llc/design-tokens`. Build-time only. |
 | `NODE_ENV` | Opt | Server | Both | `production` in Railway. |
 | `SEED_ALLOW_PROD` | Opt | Server | Prod | Guard override for the demo seed; leave unset in production. |
 | `RAILWAY_GIT_*`, `RAILWAY_SERVICE_ID`, `RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT_NAME` | Auto | Server | Prod | Injected by Railway; surfaced by `/api/build-info`. |
