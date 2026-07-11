@@ -2,6 +2,9 @@
   "name": "mactech-bizops",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "dev": "next dev",
     "prepare:hub-client": "node scripts/run-prepare-hub-client.mjs",
