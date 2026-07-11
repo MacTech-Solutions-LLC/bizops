@@ -29,6 +29,7 @@ import {
 } from "@/lib/ui/status";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { MilestoneList } from "@/components/dashboard/milestone-list";
+import { AddMilestone } from "@/components/opportunities/add-milestone";
 import {
   ArchiveButton,
   StageChanger,
@@ -192,6 +193,7 @@ export default async function OpportunityDetailPage({ params }: { params: { id: 
 
           <Card>
             <CardHeader title={`Milestones (${opp.milestones.length})`} />
+            <AddMilestone opportunityId={opp.id} canEdit={canEdit} />
             <MilestoneList
               items={opp.milestones.map((m) => ({
                 id: m.id,

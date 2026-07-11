@@ -31,6 +31,15 @@ export async function listOfficeOptions(ctx: GovConContext, agencyId?: string) {
   });
 }
 
+export async function listOpportunityOptions(ctx: GovConContext) {
+  requireGovConPermission(ctx, GOVCON_PERMISSIONS.GOVCON_VIEW);
+  return prisma.govConOpportunity.findMany({
+    where: { hubOrganizationId: ctx.tenantOrgId, archivedAt: null },
+    select: { id: true, internalName: true },
+    orderBy: { internalName: "asc" },
+  });
+}
+
 export async function listPartnerOptions(ctx: GovConContext) {
   requireGovConPermission(ctx, GOVCON_PERMISSIONS.GOVCON_VIEW);
   return prisma.govConPartner.findMany({
