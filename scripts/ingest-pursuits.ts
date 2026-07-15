@@ -180,7 +180,7 @@ async function ingestPursuit(p: PursuitData): Promise<void> {
       severity: r.severity,
       likelihood: r.likelihood,
       mitigation: r.mitigation,
-      status: "OPEN" as const,
+      status: r.status,
       createdBy: ACTOR,
       updatedBy: ACTOR,
     };

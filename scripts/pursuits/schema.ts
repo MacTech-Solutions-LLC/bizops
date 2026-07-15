@@ -31,6 +31,7 @@ import {
   GovConMilestoneType,
   GovConOpportunityType,
   GovConPriority,
+  GovConRiskStatus,
   GovConSeverity,
   GovConStage,
   GovConTaskStatus,
@@ -65,6 +66,12 @@ export const pursuitRiskSchema = z.object({
   severity: z.nativeEnum(GovConSeverity),
   likelihood: z.enum(["high", "medium", "low"]),
   mitigation: z.string(),
+  /**
+   * Defaults to OPEN. Set CLOSED or ACCEPTED once evidence retires a risk: the
+   * row is kept as history — and the mitigation should say what closed it — but
+   * it drops out of the live register the Active Bids page counts.
+   */
+  status: z.nativeEnum(GovConRiskStatus).default(GovConRiskStatus.OPEN),
 });
 
 export const pursuitMilestoneSchema = z.object({
