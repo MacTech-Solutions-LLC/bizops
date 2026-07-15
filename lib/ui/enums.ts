@@ -187,3 +187,18 @@ export const READINESS_STATUSES: Option[] = [
   { value: "EXPIRED", label: "Expired" },
   { value: "NOT_APPLICABLE", label: "N/A" },
 ];
+
+export const CLEARANCE_LEVELS: Option[] = [
+  { value: "none", label: "None" },
+  { value: "public_trust", label: "Public Trust" },
+  { value: "confidential", label: "Confidential" },
+  { value: "secret", label: "Secret" },
+  { value: "top_secret", label: "Top Secret" },
+  { value: "ts_sci", label: "TS/SCI" },
+];
+
+export const PROFICIENCY_LEVELS: Option[] = [
+  { value: "familiar", label: "Familiar" },
+  { value: "proficient", label: "Proficient" },
+  { value: "expert", label: "Expert" },
+];

@@ -14,6 +14,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "node --conditions=import --import tsx --test tests/**/*.test.ts",
+    "test:ai-live": "RESUME_AI_LIVE=1 node --conditions=import --import tsx --test tests/resume-ai-live.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -29,10 +30,11 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@anthropic-ai/sdk": "^0.111.0",
     "@clerk/nextjs": "^5.7.6",
     "@mactech-solutions-llc/design-tokens": "file:./vendor/design-tokens",
     "@mactech/hub-client": "file:./vendor/hub-client",
+    "@prisma/client": "^5.22.0",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-dropdown-menu": "^2.1.1",
     "@radix-ui/react-label": "^2.1.0",
@@ -45,11 +47,13 @@
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "lucide-react": "^0.441.0",
+    "mammoth": "^1.12.0",
     "next": "^14.2.28",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.13.3",
     "tailwind-merge": "^2.5.2",
+    "unpdf": "^1.6.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
