@@ -15,6 +15,7 @@ import {
   type ParseState,
 } from "@/app/(app)/onboarding/actions";
 import type { ResumeProposal } from "@/lib/resume";
+import { serialiseProposalPayload } from "@/lib/resume/review-payload";
 
 /** Mirrors ACCEPTED_RESUME_TYPES; duplicated as a string so the file picker
  * hint doesn't drag the server-side extractor into the browser bundle. */
@@ -205,22 +206,26 @@ function ReviewStep({
 
   // Only included rows are serialised — an excluded row never reaches the
   // server, so rejecting a bad extraction actually removes it.
+  //
+  // The shape itself is built by `serialiseProposalPayload`, which is pure and
+  // tested directly against the schema. Don't inline it back here: this seam
+  // broke twice precisely because the UI's real payload was never exercised.
   const payload = useMemo(() => {
     const strip = <T extends { include: boolean }>(rows: T[]) =>
       rows.filter((r) => r.include).map(({ include: _include, ...rest }) => rest);
 
-    return JSON.stringify({
-      headline: headline.trim(),
-      summary: summary.trim(),
-      laborCategory: laborCategory.trim(),
-      yearsExperience: yearsExperience.trim(),
+    return serialiseProposalPayload({
+      headline,
+      summary,
+      laborCategory,
+      yearsExperience,
       clearanceLevel,
       skills: strip(skills),
       certifications: strip(certifications),
       education: strip(education),
       experience: strip(experience),
       resumeSourceFilename: proposal.meta.filename,
-      resumeParseModel: proposal.meta.model ?? "",
+      resumeParseModel: proposal.meta.model,
     });
   }, [
     headline,
