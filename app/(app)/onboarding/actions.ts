@@ -5,11 +5,7 @@ import { requireGovConContext } from "@/lib/auth/govcon-context";
 import { isAppError, ValidationError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { parseResume, type ResumeProposal } from "@/lib/resume";
-import {
-  applyResumeProposal,
-  publishProfile,
-  updateProfile,
-} from "@/lib/services/member-profile";
+import { applyResumeProposal, publishProfile, saveProfile } from "@/lib/services/member-profile";
 
 export interface FormState {
   ok: boolean;
@@ -116,39 +112,55 @@ export async function applyProposalAction(
   }
 
   revalidatePath("/onboarding");
-  revalidatePath("/profile");
   return { ok: true };
 }
 
-/** Save manual edits to the profile's scalar fields. */
+/**
+ * Save a manually edited profile. Takes the same JSON-payload shape as
+ * `applyProposalAction` — the edit form is the review form seeded from the
+ * database rather than from a resume — but routes to `saveProfile`, which
+ * leaves the resume provenance fields alone.
+ */
 export async function saveProfileAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const ctx = await requireGovConContext();
-  const input: Record<string, unknown> = {};
-  for (const [key, value] of formData.entries()) {
-    if (key.startsWith("$")) continue;
-    input[key] = value;
+  const raw = formData.get("payload");
+
+  if (typeof raw !== "string") {
+    return { ok: false, error: "Nothing to save. Please reload and try again." };
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: "Nothing to save. Please reload and try again." };
   }
 
   try {
-    await updateProfile(ctx, ctx.actorHubUserId, input);
+    await saveProfile(ctx, ctx.actorHubUserId, payload);
   } catch (err) {
     if (err instanceof ValidationError) {
-      return { ok: false, error: "Please correct the highlighted fields.", issues: err.issues };
+      // Same reasoning as applyProposalAction: name the sections the member can
+      // see rather than promise highlighting on paths like `experience.0.startedOn`.
+      return { ok: false, error: "We couldn't save these details:", issues: err.issues };
     }
     if (isAppError(err)) return { ok: false, error: err.userMessage };
     throw err;
   }
 
   revalidatePath("/onboarding");
-  revalidatePath("/profile");
   return { ok: true };
 }
 
-/** Publish — makes the profile eligible for capability statements. */
-export async function publishProfileAction(_prev: FormState): Promise<FormState> {
+/** Publish — makes the profile eligible for capability statements. Takes the
+ * unused FormData so it can be driven by a plain `<form action>`. */
+export async function publishProfileAction(
+  _prev: FormState,
+  _formData: FormData,
+): Promise<FormState> {
   const ctx = await requireGovConContext();
   try {
     await publishProfile(ctx, ctx.actorHubUserId);
@@ -157,6 +169,5 @@ export async function publishProfileAction(_prev: FormState): Promise<FormState>
     throw err;
   }
   revalidatePath("/onboarding");
-  revalidatePath("/profile");
   return { ok: true };
 }
