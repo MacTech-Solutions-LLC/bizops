@@ -15,6 +15,7 @@ import {
   ScrollText,
   Settings,
   Target,
+  UserCircle,
   Users,
 } from "lucide-react";
 
@@ -66,6 +67,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Readiness", href: "/readiness", icon: ClipboardCheck },
       { label: "Reports", href: "/reports", icon: BarChart3 },
+      { label: "My Profile", href: "/onboarding", icon: UserCircle },
       { label: "Settings", href: "/settings", icon: Settings },
     ],
   },

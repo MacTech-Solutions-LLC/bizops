@@ -28,6 +28,12 @@ export const GOVCON_PERMISSIONS = {
   GOVCON_TASKS_MANAGE: "org:govcon:tasks:manage",
   GOVCON_DOCUMENTS_MANAGE: "org:govcon:documents:manage",
   GOVCON_READINESS_MANAGE: "org:govcon:readiness:manage",
+  /** Edit your own capability profile. Held by every role — a member must be
+   * able to complete their own onboarding without an elevated grant. */
+  GOVCON_PROFILE_SELF_MANAGE: "org:govcon:profile:self",
+  /** Read/administer *other* members' profiles (manager rollups, org-wide
+   * capability statements). Deliberately separate from the self grant. */
+  GOVCON_PROFILE_MANAGE: "org:govcon:profile:manage",
   GOVCON_REPORTS_VIEW: "org:govcon:reports:view",
   GOVCON_EXPORT: "org:govcon:export",
 } as const;
@@ -45,6 +51,8 @@ const VIEWER_PERMISSIONS: GovConPermission[] = [
   GOVCON_PERMISSIONS.GOVCON_VIEW,
   GOVCON_PERMISSIONS.GOVCON_PIPELINE_VIEW,
   GOVCON_PERMISSIONS.GOVCON_REPORTS_VIEW,
+  // Self-service onboarding: every role edits its own profile, including guest.
+  GOVCON_PERMISSIONS.GOVCON_PROFILE_SELF_MANAGE,
 ];
 
 /** Contributors can create/edit records and drive collaboration, but not
@@ -73,6 +81,7 @@ const MANAGER_PERMISSIONS: GovConPermission[] = [
   GOVCON_PERMISSIONS.GOVCON_PROPOSAL_MANAGE,
   GOVCON_PERMISSIONS.GOVCON_PARTNERS_MANAGE,
   GOVCON_PERMISSIONS.GOVCON_READINESS_MANAGE,
+  GOVCON_PERMISSIONS.GOVCON_PROFILE_MANAGE,
   GOVCON_PERMISSIONS.GOVCON_EXPORT,
 ];
 
