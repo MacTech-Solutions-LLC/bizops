@@ -70,7 +70,15 @@ export function BidCard({ bid }: { bid: ActiveBidListItem }) {
   const { critical, high, total } = bid.riskCounts;
 
   return (
-    <article className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow focus-within:shadow-md hover:shadow-md">
+    // The whole card is the link. An overlay-pseudo stretched link does not work
+    // here: `truncate` on the title sets overflow:hidden, which clips the overlay
+    // to the title's box and leaves the rest of the card — including the "Open"
+    // affordance — dead to clicks.
+    <Link
+      href={`/active-bids/${bid.id}`}
+      aria-label={`Open bid room for ${bid.internalName}`}
+      className="group relative block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+    >
       {tone.urgent ? (
         <span className="absolute inset-y-0 left-0 w-1 bg-amber-400" aria-hidden="true" />
       ) : null}
@@ -79,14 +87,7 @@ export function BidCard({ bid }: { bid: ActiveBidListItem }) {
         {/* Identity */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-slate-900">
-              <Link
-                href={`/active-bids/${bid.id}`}
-                className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 after:absolute after:inset-0 after:content-['']"
-              >
-                {bid.internalName}
-              </Link>
-            </h3>
+            <h3 className="truncate text-sm font-semibold text-slate-900">{bid.internalName}</h3>
             <p className="mt-1 truncate text-xs text-slate-500">
               {[bid.solicitationNumber, agency, bid.placeOfPerformance].filter(Boolean).join(" · ")}
             </p>
@@ -186,12 +187,15 @@ export function BidCard({ bid }: { bid: ActiveBidListItem }) {
               {bid.artifactCount} artifacts
             </span>
           </div>
-          <span className="flex shrink-0 items-center gap-1 font-medium text-blue-600 transition-transform group-hover:translate-x-0.5">
+          <span
+            aria-hidden="true"
+            className="flex shrink-0 items-center gap-1 font-medium text-blue-600 transition-transform group-hover:translate-x-0.5"
+          >
             Open <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 
