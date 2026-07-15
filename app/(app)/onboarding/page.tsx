@@ -7,6 +7,8 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ErrorState, PageHeader, ProgressBar } from "@/components/ui/misc";
 import { cn } from "@/lib/ui/cn";
 import { ResumeReview } from "@/components/onboarding/resume-review";
+import { ProfilePanel } from "@/components/onboarding/profile-panel";
+import { isProfileStarted } from "@/lib/domain/member-profile";
 
 export const metadata: Metadata = { title: "Onboarding" };
 export const dynamic = "force-dynamic";
@@ -15,13 +17,33 @@ export default async function OnboardingPage() {
   const ctx = await requireGovConContext();
 
   let body: React.ReactNode;
+  let heading = {
+    title: "Complete your profile",
+    subtitle:
+      "Upload your resume to fill in most of it, or type it in yourself. This is what your MacTech capability statement is built from.",
+  };
   try {
     const { profile, completeness } = await getOrCreateProfile(ctx);
+
+    // A profile with nothing in it opens on the upload wizard; once it has
+    // content, the page is the profile — showing a member an upload box on top
+    // of details they already saved reads as though the save didn't take.
+    const started = isProfileStarted(profile);
+    if (started) {
+      heading = {
+        title: "My profile",
+        subtitle: "This is what your MacTech capability statement is built from.",
+      };
+    }
 
     body = (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <ResumeReview />
+          {started ? (
+            <ProfilePanel profile={profile} status={profile.status} />
+          ) : (
+            <ResumeReview />
+          )}
         </div>
 
         <div className="space-y-4">
@@ -126,10 +148,7 @@ export default async function OnboardingPage() {
 
   return (
     <>
-      <PageHeader
-        title="Complete your profile"
-        subtitle="Upload your resume to fill in most of it, or type it in yourself. This is what your MacTech capability statement is built from."
-      />
+      <PageHeader title={heading.title} subtitle={heading.subtitle} />
       {body}
     </>
   );

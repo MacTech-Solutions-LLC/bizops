@@ -27,6 +27,7 @@ import {
 } from "@/lib/domain/profile-completeness";
 import {
   applyResumeProposalSchema,
+  saveMemberProfileSchema,
   updateMemberProfileSchema,
 } from "@/lib/validation/member-profile";
 
@@ -181,6 +182,85 @@ export async function updateProfile(
 }
 
 /**
+ * Drop every section row on a profile, so the caller can recreate them from the
+ * payload. Shared by the two full-profile save paths, which both submit the
+ * member's complete reviewed set: a row they removed is absent from the payload
+ * and must therefore disappear from the profile rather than linger.
+ */
+async function clearSections(tx: Prisma.TransactionClient, profileId: string): Promise<void> {
+  await tx.govConMemberSkill.deleteMany({ where: { profileId } });
+  await tx.govConMemberCertification.deleteMany({ where: { profileId } });
+  await tx.govConMemberEducation.deleteMany({ where: { profileId } });
+  await tx.govConMemberExperience.deleteMany({ where: { profileId } });
+}
+
+/**
+ * Save a manually edited profile — scalars and all four sections.
+ *
+ * Distinct from `applyResumeProposal` in exactly the ways that matter for the
+ * audit trail: it does not touch `resumeParsedAt`/`resumeSourceFilename`, and it
+ * records `member_profile.updated`. A member who hand-types their profile has
+ * not parsed a resume, and the record should not say they did.
+ */
+export async function saveProfile(
+  ctx: GovConContext,
+  hubUserId: string,
+  rawInput: unknown,
+): Promise<MemberProfileWithCompleteness> {
+  requireProfileAccess(ctx, hubUserId);
+  const input = parseOrThrow(saveMemberProfileSchema, rawInput);
+
+  return guard("saveProfile", async () => {
+    const existing = await prisma.govConMemberProfile.findUnique({
+      where: {
+        hubOrganizationId_hubUserId: { hubOrganizationId: ctx.tenantOrgId, hubUserId },
+      },
+      include: profileInclude,
+    });
+    if (!existing) throw new NotFoundError("Profile not found");
+
+    const updated = await prisma.$transaction(async (tx) => {
+      await clearSections(tx, existing.id);
+
+      const withChildren = await tx.govConMemberProfile.update({
+        where: { id: existing.id },
+        data: {
+          headline: input.headline,
+          summary: input.summary,
+          laborCategory: input.laborCategory,
+          yearsExperience: input.yearsExperience,
+          clearanceLevel: input.clearanceLevel,
+          skills: { create: input.skills },
+          certifications: { create: input.certifications },
+          education: { create: input.education },
+          experience: { create: input.experience },
+        },
+        include: profileInclude,
+      });
+
+      const rescored = await tx.govConMemberProfile.update({
+        where: { id: withChildren.id },
+        data: { completeness: completenessFor(withChildren).score },
+        include: profileInclude,
+      });
+
+      await recordAudit(tx, ctx, {
+        action: "member_profile.updated",
+        eventCategory: "org",
+        entityType: "GovConMemberProfile",
+        entityId: rescored.id,
+        summary: `Profile edited for ${hubUserId}`,
+        before: { completeness: existing.completeness },
+        after: { completeness: rescored.completeness },
+      });
+      return rescored;
+    });
+
+    return { profile: updated, completeness: completenessFor(updated) };
+  });
+}
+
+/**
  * Apply a reviewed resume proposal.
  *
  * This is the ONLY path by which parsed resume data is persisted, and it runs
@@ -209,10 +289,7 @@ export async function applyResumeProposal(
     if (!existing) throw new NotFoundError("Profile not found");
 
     const updated = await prisma.$transaction(async (tx) => {
-      await tx.govConMemberSkill.deleteMany({ where: { profileId: existing.id } });
-      await tx.govConMemberCertification.deleteMany({ where: { profileId: existing.id } });
-      await tx.govConMemberEducation.deleteMany({ where: { profileId: existing.id } });
-      await tx.govConMemberExperience.deleteMany({ where: { profileId: existing.id } });
+      await clearSections(tx, existing.id);
 
       const withChildren = await tx.govConMemberProfile.update({
         where: { id: existing.id },

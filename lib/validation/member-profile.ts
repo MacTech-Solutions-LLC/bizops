@@ -80,6 +80,34 @@ export const partialDateToDate = z
   .optional()
   .transform((v) => (v === undefined ? undefined : parsePartialDate(v)));
 
+/**
+ * A date the member typed, from an `<input type="month">` ("2019-06") or "".
+ *
+ * The strict counterpart `partialDateToDate` warns about: that one absorbs
+ * unreadable input because it comes from a machine extraction the member cannot
+ * correct. Here the member is looking at the field, so an unreadable value is
+ * reported back rather than silently dropped — a summary that quietly loses the
+ * start date they just typed is worse than a validation error.
+ */
+export const monthInputToDate = z
+  .union([z.string(), z.date(), z.null()])
+  .optional()
+  .transform((v, ctx) => {
+    if (v === undefined) return undefined;
+    if (v === null) return null;
+    if (v instanceof Date) return v;
+    const trimmed = v.trim();
+    if (trimmed === "") return null;
+    const match = /^(\d{4})-(\d{2})$/.exec(trimmed);
+    const year = match ? Number(match[1]) : NaN;
+    const month = match ? Number(match[2]) : NaN;
+    if (!match || month < 1 || month > 12 || year < 1900 || year > 2200) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Use a month and year, e.g. 2019-06" });
+      return null;
+    }
+    return new Date(Date.UTC(year, month - 1, 1));
+  });
+
 export const skillSchema = z.object({
   name: z.string().trim().min(1, "Skill name is required").max(120),
   category: jsonNullableText,
@@ -154,5 +182,36 @@ export const applyResumeProposalSchema = z.object({
   resumeParseModel: jsonNullableText,
 });
 
+/**
+ * The manual-edit payload: the same scalars and full-replacement collections as
+ * the resume path, minus the provenance fields — nothing here came from a
+ * resume, so claiming a source file would be a lie in the audit trail.
+ *
+ * Dates use `monthInputToDate` rather than `partialDateToDate` because these
+ * ones the member typed. Rows that originated from a resume round-trip through
+ * here unchanged; the client renders their stored dates back as month inputs.
+ */
+export const saveMemberProfileSchema = z.object({
+  headline: jsonNullableText,
+  summary: jsonNullableText,
+  laborCategory: jsonNullableText,
+  yearsExperience: jsonNullableInt(80),
+  clearanceLevel: z.nativeEnum(GovConClearanceLevel).default(GovConClearanceLevel.none),
+  skills: z.array(skillSchema).max(100).default([]),
+  certifications: z
+    .array(certificationSchema.extend({ issuedOn: monthInputToDate, expiresOn: monthInputToDate }))
+    .max(50)
+    .default([]),
+  education: z
+    .array(educationSchema.extend({ completedOn: monthInputToDate }))
+    .max(20)
+    .default([]),
+  experience: z
+    .array(experienceSchema.extend({ startedOn: monthInputToDate, endedOn: monthInputToDate }))
+    .max(40)
+    .default([]),
+});
+
 export type UpdateMemberProfileInput = z.infer<typeof updateMemberProfileSchema>;
 export type ApplyResumeProposalInput = z.infer<typeof applyResumeProposalSchema>;
+export type SaveMemberProfileInput = z.infer<typeof saveMemberProfileSchema>;

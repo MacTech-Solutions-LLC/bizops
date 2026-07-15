@@ -59,6 +59,19 @@ test("detectClearance returns none rather than guessing when absent", () => {
   assert.equal(detectClearance("Software engineer. Python, Go.").level, "none");
 });
 
+test("detectClearance windows the evidence when the resume has no line breaks", () => {
+  // PDF extraction routinely yields the whole resume as one bullet-joined line.
+  // Evidence is for the member to eyeball, so it must stay snippet-sized.
+  const oneLine = `${"Led a team of engineers • ".repeat(40)}Active DoD TS/SSBI • ${"Delivered ATO packages • ".repeat(40)}`;
+  const result = detectClearance(oneLine);
+  assert.equal(result.level, "top_secret");
+  assert.match(result.evidence ?? "", /TS\/SSBI/);
+  assert.ok(
+    (result.evidence?.length ?? 0) < 200,
+    `evidence should be a snippet, got ${result.evidence?.length} chars`,
+  );
+});
+
 // --- certifications --------------------------------------------------------
 
 test("detectCertifications matches known federal certifications", () => {
