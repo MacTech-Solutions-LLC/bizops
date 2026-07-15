@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { GovConStage } from "@prisma/client";
 import {
+  ACTIVE_BID_STAGES,
+  contingentExposure,
+  daysUntil,
   isClosedStage,
   isOpenStage,
   readinessExpiryState,
@@ -19,6 +22,50 @@ test("weightedValue = value × pWin/100; 0 when pWin missing", () => {
   assert.equal(weightedValue(null, 40), 0);
   // clamps out-of-range pWin
   assert.equal(weightedValue(100, 250), 100);
+});
+
+test("contingentExposure = max − estimated, never negative", () => {
+  // Shape: a basis of bid plus priced-but-unelected adders quoted above it.
+  assert.equal(contingentExposure(500_000, 600_000), 100_000);
+  // No headroom quoted — max absent or equal to the basis.
+  assert.equal(contingentExposure(500_000, null), 0);
+  assert.equal(contingentExposure(500_000, 500_000), 0);
+  // A max below the basis is nonsense; report no headroom rather than negative.
+  assert.equal(contingentExposure(500_000, 400_000), 0);
+});
+
+test("daysUntil counts calendar days and is null-safe", () => {
+  const now = new Date("2026-07-14T12:00:00.000Z");
+  assert.equal(daysUntil(new Date("2026-07-30T12:00:00.000Z"), now), 16);
+  assert.equal(daysUntil(new Date("2026-07-14T12:00:00.000Z"), now), 0);
+  assert.equal(daysUntil(new Date("2026-06-22T12:00:00.000Z"), now), -22);
+  assert.equal(daysUntil(null, now), null);
+});
+
+test("daysUntil counts whole days regardless of time of day", () => {
+  // Late-evening "now" must not shave a day off the count: a deadline stored at
+  // noon UTC is one calendar day away whether it is 00:01 or 23:59 right now.
+  const early = new Date("2026-07-29T00:01:00.000Z");
+  const late = new Date("2026-07-29T23:59:00.000Z");
+  const due = new Date("2026-07-30T12:00:00.000Z");
+  assert.equal(daysUntil(due, early), 1);
+  assert.equal(daysUntil(due, late), 1);
+});
+
+test("ACTIVE_BID_STAGES is exactly the stages with a live price", () => {
+  // Compare a copy: assert.deepEqual carries an `asserts actual is T` signature,
+  // so passing the const itself would narrow it to this literal tuple and make
+  // the `includes` checks below unrepresentable.
+  assert.deepEqual([...ACTIVE_BID_STAGES], [
+    GovConStage.BID_NO_BID,
+    GovConStage.PROPOSAL,
+    GovConStage.SUBMITTED,
+    GovConStage.EVALUATION,
+  ]);
+  // A pursuit still in capture has no price out; an awarded one is no longer a bid.
+  assert.ok(!ACTIVE_BID_STAGES.includes(GovConStage.CAPTURE));
+  assert.ok(!ACTIVE_BID_STAGES.includes(GovConStage.AWARDED));
+  assert.ok(!ACTIVE_BID_STAGES.includes(GovConStage.LOST));
 });
 
 test("toNumber coerces Decimal-like, number, null", () => {

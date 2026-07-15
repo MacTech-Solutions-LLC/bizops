@@ -10,7 +10,14 @@
  * Final decision → GOVCON_BID_DECISION_APPROVE.
  */
 
-import { Prisma, GovConBidOutcome } from "@prisma/client";
+import {
+  Prisma,
+  GovConBidOutcome,
+  GovConMilestoneStatus,
+  GovConRiskStatus,
+  GovConSeverity,
+  GovConTaskStatus,
+} from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { recordAudit } from "@/lib/audit";
 import { requireGovConPermission, type GovConContext } from "@/lib/authz";
@@ -18,7 +25,14 @@ import { GOVCON_PERMISSIONS } from "@/lib/permissions/govcon";
 import { NotFoundError, OperationalError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { parseOrThrow } from "@/lib/validation/parse";
-import { scoreBidDecision, type BidCriterion } from "@/lib/domain/metrics";
+import {
+  ACTIVE_BID_STAGES,
+  contingentExposure,
+  daysUntil,
+  scoreBidDecision,
+  toNumber,
+  type BidCriterion,
+} from "@/lib/domain/metrics";
 import {
   BID_CRITERION_MAX,
   defaultBidCriteria,
@@ -82,7 +96,7 @@ export async function listActiveBidPursuits(ctx: GovConContext) {
       where: {
         hubOrganizationId: ctx.tenantOrgId,
         archivedAt: null,
-        stage: { in: ["BID_NO_BID", "PROPOSAL", "SUBMITTED", "EVALUATION"] },
+        stage: { in: ACTIVE_BID_STAGES },
       },
       orderBy: [{ proposalDeadline: { sort: "asc", nulls: "last" } }, { updatedAt: "desc" }],
       include: {
@@ -91,6 +105,149 @@ export async function listActiveBidPursuits(ctx: GovConContext) {
       },
     }),
   );
+}
+
+/** Statuses that mean an open item is still someone's problem. */
+const OPEN_TASK_STATUSES = [
+  GovConTaskStatus.BACKLOG,
+  GovConTaskStatus.TODO,
+  GovConTaskStatus.IN_PROGRESS,
+  GovConTaskStatus.REVISION_REQUIRED,
+] as const;
+
+/** Risks that still count against the bid. */
+const LIVE_RISK_STATUSES = [GovConRiskStatus.OPEN, GovConRiskStatus.MITIGATING] as const;
+
+/**
+ * The Active Bids worklist: every pursuit with a live price, plus the three
+ * things that actually drive action on it — the money at stake, the next gate on
+ * the calendar, and what is blocked on whom.
+ *
+ * Deliberately does NOT lead with PWin. It is nullable and, on MacTech's real
+ * sub-bids, never populated — the source documents don't state one. A worklist
+ * keyed on it renders empty where it matters most.
+ */
+export async function listActiveBidsWithContext(ctx: GovConContext) {
+  requireGovConPermission(ctx, GOVCON_PERMISSIONS.GOVCON_VIEW);
+  return guard("listActiveBidsWithContext", async () => {
+    const pursuits = await prisma.govConOpportunity.findMany({
+      where: {
+        hubOrganizationId: ctx.tenantOrgId,
+        archivedAt: null,
+        stage: { in: ACTIVE_BID_STAGES },
+      },
+      include: {
+        agency: { select: { name: true, abbreviation: true } },
+        bidDecision: { select: { outcome: true, decidedAt: true } },
+        // Only gates still ahead of us — a completed milestone is history.
+        milestones: {
+          where: { status: { in: [GovConMilestoneStatus.PENDING, GovConMilestoneStatus.SCHEDULED] } },
+          orderBy: { dueAt: { sort: "asc", nulls: "last" } },
+          select: { id: true, title: true, dueAt: true, type: true, status: true },
+        },
+        tasks: {
+          where: { status: { in: [...OPEN_TASK_STATUSES] } },
+          orderBy: [{ priority: "desc" }, { dueAt: { sort: "asc", nulls: "last" } }],
+          select: { id: true, title: true, priority: true, dueAt: true, tags: true },
+        },
+        risks: {
+          where: { status: { in: [...LIVE_RISK_STATUSES] } },
+          select: { id: true, severity: true },
+        },
+        _count: { select: { documents: true } },
+      },
+    });
+
+    const enriched = pursuits.map((o) => {
+      const nextGate = o.milestones.find((m) => m.dueAt !== null) ?? null;
+      return {
+        ...o,
+        nextGate,
+        daysToGate: daysUntil(nextGate?.dueAt ?? null),
+        contingent: contingentExposure(o.estimatedValue, o.maxValue),
+        riskCounts: {
+          critical: o.risks.filter((r) => r.severity === GovConSeverity.CRITICAL).length,
+          high: o.risks.filter((r) => r.severity === GovConSeverity.HIGH).length,
+          total: o.risks.length,
+        },
+        artifactCount: o._count.documents,
+      };
+    });
+
+    // Urgency order: nearest gate first, undated pursuits last. A pursuit with
+    // nothing on the calendar is not urgent — it is adrift, and the card says so.
+    enriched.sort((a, b) => {
+      if (a.daysToGate === null && b.daysToGate === null) return 0;
+      if (a.daysToGate === null) return 1;
+      if (b.daysToGate === null) return -1;
+      return a.daysToGate - b.daysToGate;
+    });
+
+    return enriched;
+  });
+}
+
+export type ActiveBidListItem = Awaited<ReturnType<typeof listActiveBidsWithContext>>[number];
+
+/**
+ * Everything the bid room renders for one pursuit: the summary narrative, the
+ * full milestone timeline, open items, the live risk register, and the artifact
+ * register (references only — `storageReference` is a pointer, never a payload).
+ */
+export async function getActiveBidDetail(ctx: GovConContext, opportunityId: string) {
+  requireGovConPermission(ctx, GOVCON_PERMISSIONS.GOVCON_VIEW);
+  return guard("getActiveBidDetail", async () => {
+    const opp = await prisma.govConOpportunity.findFirst({
+      where: { id: opportunityId, hubOrganizationId: ctx.tenantOrgId, archivedAt: null },
+      include: {
+        agency: { select: { name: true, abbreviation: true } },
+        bidDecision: { select: { outcome: true, rationale: true, decidedAt: true } },
+        milestones: { orderBy: { dueAt: { sort: "asc", nulls: "last" } } },
+        tasks: {
+          where: { status: { in: [...OPEN_TASK_STATUSES] } },
+          orderBy: [{ priority: "desc" }, { dueAt: { sort: "asc", nulls: "last" } }],
+        },
+        risks: {
+          where: { status: { in: [...LIVE_RISK_STATUSES] } },
+          orderBy: { severity: "desc" },
+        },
+        documents: { orderBy: [{ category: "asc" }, { name: "asc" }] },
+      },
+    });
+    if (!opp) throw new NotFoundError("Active bid not found");
+
+    const nextGate = opp.milestones.find(
+      (m) =>
+        m.dueAt !== null &&
+        (m.status === GovConMilestoneStatus.PENDING || m.status === GovConMilestoneStatus.SCHEDULED),
+    ) ?? null;
+
+    return {
+      ...opp,
+      nextGate,
+      daysToGate: daysUntil(nextGate?.dueAt ?? null),
+      contingent: contingentExposure(opp.estimatedValue, opp.maxValue),
+    };
+  });
+}
+
+export type ActiveBidDetail = Awaited<ReturnType<typeof getActiveBidDetail>>;
+
+/** Portfolio totals across the active bid pipeline. */
+export function rollupActiveBids(bids: ActiveBidListItem[]) {
+  const atStake = bids.reduce((sum, b) => sum + toNumber(b.estimatedValue), 0);
+  const contingent = bids.reduce((sum, b) => sum + b.contingent, 0);
+  // `bids` arrives in urgency order, so the first dated pursuit owns the next gate.
+  const soonest = bids.find((b) => b.daysToGate !== null) ?? null;
+  return {
+    count: bids.length,
+    atStake,
+    contingent,
+    openItems: bids.reduce((sum, b) => sum + b.tasks.length, 0),
+    criticalRisks: bids.reduce((sum, b) => sum + b.riskCounts.critical + b.riskCounts.high, 0),
+    /** The pursuit whose gate lands first, and the gate itself. */
+    nextGate: soonest ? { bid: soonest, milestone: soonest.nextGate, days: soonest.daysToGate } : null,
+  };
 }
 
 /** Create the decision shell if absent; returns its id. Caller in a tx. */

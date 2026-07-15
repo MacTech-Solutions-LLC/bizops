@@ -198,6 +198,33 @@ export const TEAM_ROLE_STYLES: Record<string, StatusStyle> = {
   UNDECIDED: make("Undecided", "slate"),
 };
 
+export const MILESTONE_STATUS_STYLES: Record<string, StatusStyle> = {
+  PENDING: make("Pending", "slate"),
+  SCHEDULED: make("Scheduled", "blue"),
+  COMPLETED: make("Completed", "green"),
+  MISSED: make("Missed", "red"),
+  CANCELED: make("Canceled", "slate"),
+};
+
+export const DOCUMENT_STATUS_STYLES: Record<string, StatusStyle> = {
+  DRAFT: make("Draft", "slate"),
+  IN_REVIEW: make("In Review", "amber"),
+  FINAL: make("Final", "green"),
+  SUPERSEDED: make("Superseded", "slate"),
+  ARCHIVED: make("Archived", "slate"),
+};
+
+/**
+ * Sensitivity markings. CUI is deliberately red: these documents are registered
+ * by reference only and must never be served from this app. The marking is the
+ * reason the artifact register shows a path and not a download link.
+ */
+export const SENSITIVITY_STYLES: Record<string, StatusStyle> = {
+  CUI: make("CUI", "red"),
+  PROPRIETARY: make("Proprietary", "orange"),
+  PUBLIC: make("Public", "slate"),
+};
+
 /** Fallback lookup — returns a neutral pill for unknown keys. */
 export function styleFor(
   map: Record<string, StatusStyle>,

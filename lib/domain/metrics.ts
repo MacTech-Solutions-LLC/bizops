@@ -88,6 +88,44 @@ export function weightedValue(
   return value * (p / 100);
 }
 
+/**
+ * Stages that constitute the active bid pipeline — a bid decision is live or a
+ * price is on the street. Shared by the Active Bids worklist and its rollups.
+ */
+export const ACTIVE_BID_STAGES: GovConStage[] = [
+  GovConStage.BID_NO_BID,
+  GovConStage.PROPOSAL,
+  GovConStage.SUBMITTED,
+  GovConStage.EVALUATION,
+];
+
+/**
+ * Contingent exposure = the priced-but-unelected headroom above the basis of
+ * bid (max − estimated). On MacTech's sub-bids this is the sum of the adders and
+ * alternates that are quoted but not yet triggered — the amount the bid could
+ * still grow by without a re-bid. Returns 0 when max is absent or below
+ * estimated, so it never reports negative headroom.
+ */
+export function contingentExposure(estimatedValue: unknown, maxValue: unknown): number {
+  const estimated = toNumber(estimatedValue);
+  const max = toNumber(maxValue);
+  if (max <= estimated) return 0;
+  return max - estimated;
+}
+
+/**
+ * Whole days from `now` until `date`, floored toward the past: negative when
+ * overdue, 0 on the due day. Null-safe so callers can pass an optional deadline.
+ * Both sides are normalised to UTC midnight so the count is calendar days, not
+ * elapsed hours — "in 1d" should not flip to "in 0d" because of the clock.
+ */
+export function daysUntil(date: Date | null | undefined, now: Date = new Date()): number | null {
+  if (!date) return null;
+  const DAY = 24 * 60 * 60 * 1000;
+  const toUtcMidnight = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return Math.round((toUtcMidnight(date) - toUtcMidnight(now)) / DAY);
+}
+
 export interface PipelineStageRollup {
   stage: GovConStage;
   count: number;

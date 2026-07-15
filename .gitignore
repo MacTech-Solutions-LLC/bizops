@@ -10,3 +10,11 @@ out/
 # secrets-audit: env/key file hardening
 *.pem
 vendor/hub-client/
+
+# Real pursuit records — live bid pricing, rate cards, and negotiating position on
+# unawarded procurements. This repo is public; that data belongs only in MacTech's
+# Postgres. Records live outside the tree (PURSUIT_DATA_DIR, default
+# ~/Contracting/.bizops-pursuits/). These patterns are a backstop in case one is
+# ever dropped in here by mistake. See docs/PURSUIT_INGEST.md.
+scripts/pursuits/*.json
+.bizops-pursuits/
