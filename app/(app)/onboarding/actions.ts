@@ -96,7 +96,20 @@ export async function applyProposalAction(
     await applyResumeProposal(ctx, ctx.actorHubUserId, payload);
   } catch (err) {
     if (err instanceof ValidationError) {
-      return { ok: false, error: err.userMessage, issues: err.issues };
+      // Not `err.userMessage` — that defaults to "Please correct the highlighted
+      // fields", and most issues here land on nested rows (experience.0.endedOn)
+      // that this screen has no input for. Point at the list we actually render
+      // rather than at highlighting we can't do.
+      logger.warn("resume_proposal_rejected", {
+        actorHubUserId: ctx.actorHubUserId,
+        // Paths only. The values are the member's resume contents.
+        issuePaths: Object.keys(err.issues ?? {}),
+      });
+      return {
+        ok: false,
+        error: "We couldn't save these details:",
+        issues: err.issues,
+      };
     }
     if (isAppError(err)) return { ok: false, error: err.userMessage };
     throw err;

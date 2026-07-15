@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { GovConClearanceLevel, GovConFieldSource, GovConProfileStatus } from "@prisma/client";
 import { optionalDate, optionalNullableText, optionalNumber } from "@/lib/validation/common";
+import { parsePartialDate } from "@/lib/resume/dates";
 
 /**
  * Member capability profile validation.
@@ -11,25 +12,25 @@ import { optionalDate, optionalNullableText, optionalNumber } from "@/lib/valida
  * `AGENTS.md` (DR-2026-06-10-01).
  */
 
-/** Accepts "2019", "2019-06", or a full date; normalises to the first of the
- * month/year. Resumes rarely state a precise day and we must not invent one. */
+/**
+ * A resume-derived partial date. Delegates to `parsePartialDate`, which absorbs
+ * the shapes resumes actually use ("Present", "June 2019", "06/2019") and
+ * returns null for ongoing, empty, or unreadable input.
+ *
+ * Deliberately lenient: this CANNOT fail validation. These values arrive from a
+ * machine extraction, not the member's keyboard. The strict version rejected the
+ * entire submission when the model wrote "Present" instead of null — so a member
+ * could not save their profile at all, and the error pointed at
+ * `experience.0.endedOn`, a field the review UI does not render. An optional
+ * field must never be able to block a save.
+ *
+ * A manual date-entry form wants the opposite contract — tell the member exactly
+ * what they mistyped. That needs its own strict validator; don't reuse this one.
+ */
 export const partialDateToDate = z
   .union([z.string(), z.date(), z.null()])
   .optional()
-  .transform((v, ctx) => {
-    if (v === undefined) return undefined;
-    if (v === null || v === "") return null;
-    if (v instanceof Date) return v;
-    const raw = v.trim();
-    if (/^\d{4}$/.test(raw)) return new Date(`${raw}-01-01T00:00:00Z`);
-    if (/^\d{4}-\d{2}$/.test(raw)) return new Date(`${raw}-01T00:00:00Z`);
-    const parsed = new Date(raw);
-    if (Number.isNaN(parsed.getTime())) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Use YYYY, YYYY-MM, or YYYY-MM-DD" });
-      return z.NEVER;
-    }
-    return parsed;
-  });
+  .transform((v) => (v === undefined ? undefined : parsePartialDate(v)));
 
 export const skillSchema = z.object({
   name: z.string().trim().min(1, "Skill name is required").max(120),
