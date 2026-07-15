@@ -13,6 +13,54 @@ import { parsePartialDate } from "@/lib/resume/dates";
  */
 
 /**
+ * Text in a JSON payload — as opposed to a form post.
+ *
+ * The shared `optionalNullableText` is built for FormData, where every value is
+ * a string and null is impossible, so it rejects null outright. The resume
+ * review step submits JSON, and the extraction legitimately uses null to mean
+ * "the resume didn't say" — an unknown issuer, no contract name. That is the
+ * normal case, not an error: null is exactly what the AI is instructed to
+ * return rather than guess. Rejecting it failed the whole save on the shape our
+ * own pipeline produces.
+ *
+ * null (unknown) and "" (member cleared the field) both resolve to null — the
+ * column is nullable and the distinction isn't one the member can act on.
+ */
+const jsonNullableText = z
+  .union([z.string(), z.null()])
+  .optional()
+  .transform((v) => {
+    if (v === undefined) return undefined;
+    if (v === null) return null;
+    const trimmed = v.trim();
+    return trimmed === "" ? null : trimmed;
+  });
+
+/**
+ * An integer in a JSON payload. Accepts a number (AI), a numeric string (the
+ * review form's number input), null, or "".
+ *
+ * Critically it does NOT coerce null to 0. "Unknown years of experience" and
+ * "zero years of experience" are different claims, and only one of them is true
+ * — a silent 0 would put an asserted falsehood on a capability statement.
+ * Out-of-range and unparseable values become null rather than blocking the save,
+ * consistent with the date handling: this payload is part machine-extracted, and
+ * an optional field must not be able to stop a member saving their profile.
+ */
+const jsonNullableInt = (max: number) =>
+  z
+    .union([z.number(), z.string(), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined;
+      if (v === null) return null;
+      const n = typeof v === "string" ? (v.trim() === "" ? NaN : Number(v)) : v;
+      if (!Number.isFinite(n)) return null;
+      const int = Math.trunc(n);
+      return int >= 0 && int <= max ? int : null;
+    });
+
+/**
  * A resume-derived partial date. Delegates to `parsePartialDate`, which absorbs
  * the shapes resumes actually use ("Present", "June 2019", "06/2019") and
  * returns null for ongoing, empty, or unreadable input.
@@ -34,17 +82,17 @@ export const partialDateToDate = z
 
 export const skillSchema = z.object({
   name: z.string().trim().min(1, "Skill name is required").max(120),
-  category: optionalNullableText,
+  category: jsonNullableText,
   proficiency: z.enum(["familiar", "proficient", "expert"]).default("proficient"),
-  yearsExperience: optionalNumber,
+  yearsExperience: jsonNullableInt(80),
   source: z.nativeEnum(GovConFieldSource).default(GovConFieldSource.manual),
   confirmed: z.coerce.boolean().default(true),
 });
 
 export const certificationSchema = z.object({
   name: z.string().trim().min(1, "Certification name is required").max(200),
-  issuer: optionalNullableText,
-  identifier: optionalNullableText,
+  issuer: jsonNullableText,
+  identifier: jsonNullableText,
   issuedOn: partialDateToDate,
   expiresOn: partialDateToDate,
   source: z.nativeEnum(GovConFieldSource).default(GovConFieldSource.manual),
@@ -53,8 +101,8 @@ export const certificationSchema = z.object({
 
 export const educationSchema = z.object({
   institution: z.string().trim().min(1, "Institution is required").max(200),
-  degree: optionalNullableText,
-  field: optionalNullableText,
+  degree: jsonNullableText,
+  field: jsonNullableText,
   completedOn: partialDateToDate,
   source: z.nativeEnum(GovConFieldSource).default(GovConFieldSource.manual),
   confirmed: z.coerce.boolean().default(true),
@@ -62,13 +110,13 @@ export const educationSchema = z.object({
 
 export const experienceSchema = z.object({
   organization: z.string().trim().min(1, "Organization is required").max(200),
-  role: optionalNullableText,
+  role: jsonNullableText,
   startedOn: partialDateToDate,
   endedOn: partialDateToDate,
-  summary: optionalNullableText,
+  summary: jsonNullableText,
   isFederal: z.coerce.boolean().default(false),
-  agency: optionalNullableText,
-  contractName: optionalNullableText,
+  agency: jsonNullableText,
+  contractName: jsonNullableText,
   source: z.nativeEnum(GovConFieldSource).default(GovConFieldSource.manual),
   confirmed: z.coerce.boolean().default(true),
 });
@@ -92,18 +140,18 @@ export const updateMemberProfileSchema = z.object({
  * are simply absent here, which is what makes "reject a bad AI guess" work.
  */
 export const applyResumeProposalSchema = z.object({
-  headline: optionalNullableText,
-  summary: optionalNullableText,
-  laborCategory: optionalNullableText,
-  yearsExperience: optionalNumber,
+  headline: jsonNullableText,
+  summary: jsonNullableText,
+  laborCategory: jsonNullableText,
+  yearsExperience: jsonNullableInt(80),
   clearanceLevel: z.nativeEnum(GovConClearanceLevel).default(GovConClearanceLevel.none),
   skills: z.array(skillSchema).max(100).default([]),
   certifications: z.array(certificationSchema).max(50).default([]),
   education: z.array(educationSchema).max(20).default([]),
   experience: z.array(experienceSchema).max(40).default([]),
   /** Provenance only; never a pointer to a stored file. */
-  resumeSourceFilename: optionalNullableText,
-  resumeParseModel: optionalNullableText,
+  resumeSourceFilename: jsonNullableText,
+  resumeParseModel: jsonNullableText,
 });
 
 export type UpdateMemberProfileInput = z.infer<typeof updateMemberProfileSchema>;

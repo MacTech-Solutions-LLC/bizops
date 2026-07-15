@@ -27,9 +27,14 @@ export const optionalDate = z
   .optional()
   .transform((v) => (v === undefined ? undefined : v instanceof Date ? v : null));
 
-/** Number; absent → undefined, "" / null → null, else finite number. */
+/** Number; absent → undefined, "" / null → null, else finite number.
+ *
+ * `z.null()` MUST precede `z.coerce.number()`: a union returns the first branch
+ * that succeeds, and `z.coerce.number()` accepts null by coercing it to 0
+ * (`Number(null) === 0`). With the old ordering an explicit null — meaning
+ * "unknown" — was silently stored as a real, asserted zero. */
 export const optionalNumber = z
-  .union([z.coerce.number(), z.literal(""), z.null()])
+  .union([z.null(), z.literal(""), z.coerce.number()])
   .optional()
   .transform((v) =>
     v === undefined ? undefined : typeof v === "number" && Number.isFinite(v) ? v : null,
