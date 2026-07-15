@@ -143,30 +143,43 @@ export function splitSections(text: string): Record<string, string> {
   );
 }
 
+/** Characters of context kept either side of a clearance match. */
+const EVIDENCE_WINDOW = 80;
+
 /**
- * Detect the highest clearance asserted. Returns the surrounding line as
+ * The text either side of a match, trimmed to whole words and ellipsised.
+ * Windowed on the match rather than cut at line breaks: PDF extraction often
+ * yields a whole resume as a single unbroken line, and "the matching line" is
+ * then the entire document.
+ */
+function evidenceAround(text: string, match: RegExpExecArray): string {
+  const from = Math.max(0, match.index - EVIDENCE_WINDOW);
+  const to = Math.min(text.length, match.index + match[0].length + EVIDENCE_WINDOW);
+  let snippet = text.slice(from, to).replace(/\s+/g, " ").trim();
+  if (from > 0) snippet = `…${snippet.replace(/^\S*\s+/, "")}`;
+  if (to < text.length) snippet = `${snippet.replace(/\s+\S*$/, "")}…`;
+  return snippet;
+}
+
+/**
+ * Detect the highest clearance asserted. Returns the surrounding text as
  * evidence so the review UI can show *why* we think so — the member is
- * confirming a claim about themselves and deserves to see the source line.
+ * confirming a claim about themselves and deserves to see the source wording.
  */
 export function detectClearance(text: string): HeuristicResume["clearance"] {
   for (const { level, re } of CLEARANCE_PATTERNS) {
     const match = re.exec(text);
     if (!match) continue;
+    const evidence = evidenceAround(text, match);
     // Require clearance-ish context for the bare "Secret"/"TS" tokens, which
     // otherwise match prose like "the secret to good design".
-    const line =
-      text
-        .split("\n")
-        .find((l) => re.test(l))
-        ?.trim() ?? null;
     if (
       (level === "secret" || level === "top_secret") &&
-      line &&
-      !/clearance|cleared|SCI|polygraph|investigation|active|current/i.test(line)
+      !/clearance|cleared|SCI|SSBI|polygraph|investigation|active|current/i.test(evidence)
     ) {
       continue;
     }
-    return { level, evidence: line };
+    return { level, evidence };
   }
   return { level: "none", evidence: null };
 }
