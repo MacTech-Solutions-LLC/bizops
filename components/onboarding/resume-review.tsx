@@ -60,6 +60,61 @@ function SubmitButton({ children, ...rest }: { children: React.ReactNode; classN
   );
 }
 
+/** Validation paths → the labels the member actually sees on this screen. */
+const FIELD_LABELS: Record<string, string> = {
+  headline: "Professional title",
+  summary: "Professional summary",
+  laborCategory: "Labor category",
+  yearsExperience: "Years of experience",
+  clearanceLevel: "Clearance level",
+  skills: "Skills",
+  certifications: "Certifications",
+  education: "Education",
+  experience: "Experience",
+};
+
+/**
+ * Turn a Zod path into something a member can act on. `experience.0.endedOn`
+ * means nothing to them, and the row it names is the first entry under
+ * "Experience" — so say that.
+ */
+function humanisePath(path: string): string {
+  const [head, index, field] = path.split(".");
+  const section = FIELD_LABELS[head] ?? head;
+  if (index === undefined) return section;
+  const row = Number(index);
+  const position = Number.isNaN(row) ? "" : ` (item ${row + 1})`;
+  return field ? `${section}${position} — ${field}` : `${section}${position}`;
+}
+
+/**
+ * Render server-side validation issues.
+ *
+ * The generic "Please correct the highlighted fields" was a dead end: this
+ * screen never rendered `issues`, so nothing was ever highlighted, and the
+ * failing path was usually a nested row with no input to correct. Show the
+ * issues explicitly, keyed to what's on screen — and never promise highlighting
+ * we can't deliver.
+ */
+function IssueList({ issues }: { issues?: Record<string, string[]> }) {
+  const entries = Object.entries(issues ?? {});
+  if (entries.length === 0) return null;
+  return (
+    <ul className="mt-1.5 list-inside list-disc space-y-0.5">
+      {entries.map(([path, messages]) => (
+        <li key={path}>
+          <span className="font-medium">{humanisePath(path)}</span>: {messages.join(", ")}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Field-level errors for the scalar inputs this screen does render. */
+function fieldError(issues: Record<string, string[]> | undefined, name: string) {
+  return issues?.[name];
+}
+
 /** Step 1 — upload. */
 function UploadStep({
   state,
@@ -232,7 +287,12 @@ function ReviewStep({
       <Card>
         <CardHeader title="About you" />
         <CardBody className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="Professional title" name="headline" className="sm:col-span-2">
+          <FormField
+            label="Professional title"
+            name="headline"
+            className="sm:col-span-2"
+            error={fieldError(state.issues, "headline")}
+          >
             <TextInput
               name="headline"
               value={headline}
@@ -240,7 +300,12 @@ function ReviewStep({
               placeholder="e.g. Senior Cloud Architect"
             />
           </FormField>
-          <FormField label="Professional summary" name="summary" className="sm:col-span-2">
+          <FormField
+            label="Professional summary"
+            name="summary"
+            className="sm:col-span-2"
+            error={fieldError(state.issues, "summary")}
+          >
             <TextArea
               name="summary"
               rows={4}
@@ -249,7 +314,11 @@ function ReviewStep({
               placeholder="Two or three sentences describing what you do."
             />
           </FormField>
-          <FormField label="Labor category (LCAT)" name="laborCategory">
+          <FormField
+            label="Labor category (LCAT)"
+            name="laborCategory"
+            error={fieldError(state.issues, "laborCategory")}
+          >
             <TextInput
               name="laborCategory"
               value={laborCategory}
@@ -257,7 +326,11 @@ function ReviewStep({
               placeholder="e.g. Systems Engineer III"
             />
           </FormField>
-          <FormField label="Years of experience" name="yearsExperience">
+          <FormField
+            label="Years of experience"
+            name="yearsExperience"
+            error={fieldError(state.issues, "yearsExperience")}
+          >
             <TextInput
               name="yearsExperience"
               type="number"
@@ -276,7 +349,11 @@ function ReviewStep({
           description="Read directly from your resume text — never guessed. Confirm or correct it."
         />
         <CardBody className="space-y-3">
-          <FormField label="Clearance level" name="clearanceLevel">
+          <FormField
+            label="Clearance level"
+            name="clearanceLevel"
+            error={fieldError(state.issues, "clearanceLevel")}
+          >
             <Select
               name="clearanceLevel"
               options={CLEARANCE_LEVELS}
@@ -459,9 +536,10 @@ function ReviewStep({
       ) : null}
 
       {state.error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 ring-1 ring-red-200">
-          {state.error}
-        </p>
+        <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 ring-1 ring-red-200">
+          <p>{state.error}</p>
+          <IssueList issues={state.issues} />
+        </div>
       ) : null}
 
       <div className="flex items-center justify-between gap-3">
