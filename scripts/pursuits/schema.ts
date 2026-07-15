@@ -32,6 +32,8 @@ import {
   GovConOpportunityType,
   GovConPriority,
   GovConRiskStatus,
+  GovConSbirPhase,
+  GovConSbirProgram,
   GovConSeverity,
   GovConStage,
   GovConTaskStatus,
@@ -105,6 +107,38 @@ export const pursuitContactSchema = z.object({
   side: z.enum(["government", "prime", "sub", "mactech"]),
 });
 
+/** SBIR/STTR topic facts. Mirrors GovConSbirTopic; see `sbir` on pursuitSchema. */
+export const sbirTopicSchema = z.object({
+  program: z.nativeEnum(GovConSbirProgram),
+  component: z.string().nullable(),
+  topicNumber: z.string().min(1),
+  topicTitle: z.string().min(1),
+  phase: z.nativeEnum(GovConSbirPhase),
+  /** The portal's own proposal identifier, e.g. a DSIP number. */
+  proposalNumber: z.string().nullable(),
+  preReleaseDate: isoDate.nullable(),
+  openDate: isoDate.nullable(),
+  questionsDeadline: isoDate.nullable(),
+  closeDate: isoDate.nullable(),
+  technicalPoc: z.string().nullable(),
+  contractingPoc: z.string().nullable(),
+  objective: z.string().nullable(),
+  description: z.string().nullable(),
+  phaseIExpectations: z.string().nullable(),
+  phaseIIExpectations: z.string().nullable(),
+  phaseIIITransition: z.string().nullable(),
+  trl: z.number().int().min(1).max(9).nullable(),
+  deliverables: z.string().nullable(),
+  awardRangeMin: z.number().nonnegative().nullable(),
+  awardRangeMax: z.number().nonnegative().nullable(),
+  periodOfPerformanceMonths: z.number().int().positive().nullable(),
+  eligibilityNotes: z.string().nullable(),
+  dataRightsNotes: z.string().nullable(),
+  requiredRegistrations: z.array(z.string()),
+  submissionPortal: z.string().nullable(),
+  sourceUrl: z.string().url().nullable(),
+});
+
 export const pursuitSchema = z
   .object({
     key: slug,
@@ -175,6 +209,14 @@ export const pursuitSchema = z
       clearanceNeeds: z.string(),
       complianceRequirements: z.string(),
     }),
+
+    /**
+     * Present only for SBIR/STTR pursuits. A submitted SBIR is two things at
+     * once — a topic on the SBIR/STTR board and a bid with money on the street —
+     * so the ingest writes both and links them via `GovConSbirTopic.opportunityId`.
+     * One record, two views, no divergence.
+     */
+    sbir: sbirTopicSchema.optional(),
 
     risks: z.array(pursuitRiskSchema),
     milestones: z.array(pursuitMilestoneSchema),

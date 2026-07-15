@@ -62,6 +62,7 @@ const msId = (p: PursuitData, key: string) => `pursuit-${p.key}-ms-${key}`;
 const taskId = (p: PursuitData, key: string) => `pursuit-${p.key}-task-${key}`;
 const docId = (p: PursuitData, key: string) => `pursuit-${p.key}-doc-${key}`;
 const contactId = (p: PursuitData, key: string) => `pursuit-${p.key}-contact-${key}`;
+const sbirId = (p: PursuitData) => `pursuit-${p.key}-sbir`;
 
 /** Agencies are shared across pursuits, so they key on name, not pursuit. */
 async function upsertAgency(p: PursuitData): Promise<string> {
@@ -169,6 +170,53 @@ async function ingestPursuit(p: PursuitData): Promise<void> {
       updatedBy: ACTOR,
     },
   });
+
+  // SBIR/STTR topic, linked 1:1 to the opportunity. A submitted SBIR is both a
+  // topic on the SBIR board and a bid with a price on the street; the link keeps
+  // the two views reading from one record.
+  if (p.sbir) {
+    const s = p.sbir;
+    const sbirData = {
+      hubOrganizationId: ORG!,
+      program: s.program,
+      component: s.component,
+      agencyId,
+      topicNumber: s.topicNumber,
+      topicTitle: s.topicTitle,
+      phase: s.phase,
+      preReleaseDate: date(s.preReleaseDate),
+      openDate: date(s.openDate),
+      questionsDeadline: date(s.questionsDeadline),
+      closeDate: date(s.closeDate),
+      technicalPoc: s.technicalPoc,
+      contractingPoc: s.contractingPoc,
+      objective: s.objective,
+      description: s.description,
+      phaseIExpectations: s.phaseIExpectations,
+      phaseIIExpectations: s.phaseIIExpectations,
+      phaseIIITransition: s.phaseIIITransition,
+      trl: s.trl,
+      deliverables: s.deliverables,
+      awardRangeMin: s.awardRangeMin,
+      awardRangeMax: s.awardRangeMax,
+      periodOfPerformanceMonths: s.periodOfPerformanceMonths,
+      eligibilityNotes: s.eligibilityNotes,
+      dataRightsNotes: s.dataRightsNotes,
+      requiredRegistrations: s.requiredRegistrations,
+      submissionPortal: s.submissionPortal,
+      sourceUrl: s.sourceUrl,
+      stage: p.status.stage,
+      opportunityId: id,
+      isDemo: false,
+      createdBy: ACTOR,
+      updatedBy: ACTOR,
+    };
+    await prisma.govConSbirTopic.upsert({
+      where: { id: sbirId(p) },
+      create: { id: sbirId(p), ...sbirData },
+      update: sbirData,
+    });
+  }
 
   for (const r of p.risks) {
     const data = {
@@ -282,6 +330,7 @@ async function ingestPursuit(p: PursuitData): Promise<void> {
   console.log(
     `  ${p.identity.internalName}\n` +
       `    stage=${p.status.stage} health=${p.status.health} value=$${p.commercial.estimatedValue.toLocaleString()}\n` +
+      (p.sbir ? `    sbir: ${p.sbir.topicNumber} ${p.sbir.phase} · proposal ${p.sbir.proposalNumber ?? "—"} → linked\n` : "") +
       `    ${p.risks.length} risks · ${p.milestones.length} milestones · ${p.openItems.length} open items · ` +
       `${p.contacts.length} contacts · ${p.artifacts.length} artifacts (by reference)`,
   );
