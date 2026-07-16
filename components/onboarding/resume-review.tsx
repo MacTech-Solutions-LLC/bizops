@@ -113,6 +113,7 @@ function ReviewStep({
   const [certifications, setCertifications] = useState(() => withInclude(proposal.certifications));
   const [education, setEducation] = useState(() => withInclude(proposal.education));
   const [experience, setExperience] = useState(() => withInclude(proposal.experience));
+  const [naics, setNaics] = useState(() => withInclude(proposal.naics));
 
   const [state, formAction] = useFormState<FormState, FormData>(applyProposalAction, {
     ok: false,
@@ -134,6 +135,7 @@ function ReviewStep({
       laborCategory,
       yearsExperience,
       clearanceLevel,
+      naicsCodes: naics.filter((n) => n.include).map((n) => n.code),
       skills: strip(skills),
       certifications: strip(certifications),
       education: strip(education),
@@ -147,6 +149,7 @@ function ReviewStep({
     laborCategory,
     yearsExperience,
     clearanceLevel,
+    naics,
     skills,
     certifications,
     education,
@@ -287,6 +290,40 @@ function ReviewStep({
           ) : null}
         </CardBody>
       </Card>
+
+      {naics.length > 0 ? (
+        <Card>
+          <CardHeader
+            title="NAICS codes"
+            description="The industries your experience supports. Suggested by AI from a fixed list of real NAICS codes — never invented. Uncheck any that don't fit."
+          />
+          <CardBody>
+            <ul className="space-y-2">
+              {naics.map((n, i) => (
+                <li key={n.code} className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={n.include}
+                    onChange={() => toggle(setNaics, i)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300"
+                    aria-label={`Include NAICS ${n.code} ${n.title}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs text-slate-500">{n.code}</span>
+                      <span className="text-sm text-slate-800">{n.title}</span>
+                      <SourceBadge source="ai" />
+                    </div>
+                    {n.rationale ? (
+                      <p className="text-xs text-slate-500">{n.rationale}</p>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardBody>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader

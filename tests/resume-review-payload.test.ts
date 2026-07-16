@@ -46,6 +46,12 @@ const PROPOSAL: ResumeProposal = {
     { organization: "Acme Systems", role: "Engineer", startedOn: "2012", endedOn: "2014", summary: null, isFederal: false, agency: null, contractName: null, source: "ai" },
   ],
   capabilityHighlights: ["Leads a team of 13 senior systems engineers."],
+  // Post-validation shape: real codes, official Census titles. `validateNaics`
+  // has already run by the time a proposal exists.
+  naics: [
+    { code: "541512", title: "Computer Systems Design Services", rationale: "RMF and ATO engineering." },
+    { code: "541330", title: "Engineering Services", rationale: "Systems engineering leadership." },
+  ],
   agencies: ["U.S. Space Force", "DoD"],
   meta: {
     filename: "resume.pdf",
@@ -66,6 +72,9 @@ function selectionFrom(p: ResumeProposal): ReviewSelection {
     laborCategory: p.laborCategory ?? "",
     yearsExperience: p.yearsExperience != null ? String(p.yearsExperience) : "",
     clearanceLevel: p.clearance.level,
+    // The component sends codes only — the title and rationale are review-time
+    // context, not something the member is asserting.
+    naicsCodes: p.naics.map((n) => n.code),
     skills: p.skills,
     certifications: p.certifications,
     education: p.education,
@@ -141,6 +150,7 @@ test("a heuristics-only proposal (AI unavailable) also validates", () => {
     education: [],
     experience: [],
     capabilityHighlights: [],
+    naics: [],
     meta: { ...PROPOSAL.meta, model: null, aiStatus: "failed", aiMessage: "unavailable" },
   };
   const r = parse(degraded);
@@ -167,4 +177,34 @@ test("a member clearing every scalar produces nulls, not errors", () => {
   assert.ok(r.success);
   assert.equal(r.data.headline, null);
   assert.equal(r.data.yearsExperience, null);
+});
+
+test("a fabricated NAICS code cannot reach the database via the payload", () => {
+  // The parse step already validated these, but the payload arrives from a
+  // browser — the schema is the last line of defence, and NAICS is exactly the
+  // field where a plausible-looking invention does real damage on a bid.
+  const selection = selectionFrom(PROPOSAL);
+  const parsed = applyResumeProposalSchema.parse(
+    buildProposalPayload({ ...selection, naicsCodes: ["541512", "999999", "not-a-code"] }),
+  );
+  assert.deepEqual(parsed.naicsCodes, ["541512"]);
+});
+
+test("NAICS codes are de-duplicated and capped at three", () => {
+  const selection = selectionFrom(PROPOSAL);
+  const parsed = applyResumeProposalSchema.parse(
+    buildProposalPayload({
+      ...selection,
+      naicsCodes: ["541512", "541512", "541330", "541519", "561210"],
+    }),
+  );
+  assert.deepEqual(parsed.naicsCodes, ["541512", "541330", "541519"]);
+});
+
+test("unchecking every NAICS code saves none rather than defaulting", () => {
+  const selection = selectionFrom(PROPOSAL);
+  const parsed = applyResumeProposalSchema.parse(
+    buildProposalPayload({ ...selection, naicsCodes: [] }),
+  );
+  assert.deepEqual(parsed.naicsCodes, []);
 });

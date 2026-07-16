@@ -3,6 +3,7 @@
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { CLEARANCE_LEVELS } from "@/lib/ui/enums";
 import { toMonthInput, type StoredProfile } from "@/lib/profile/edit-payload";
+import { naicsTitle } from "@/lib/naics";
 import { SourceBadge } from "./form-bits";
 
 /**
@@ -79,6 +80,24 @@ export function ProfileSummary({ profile }: { profile: StoredProfile }) {
           </dl>
         </CardBody>
       </Card>
+
+      {profile.naicsCodes.length > 0 ? (
+        <Card>
+          <CardHeader title="NAICS codes" description="Industries this profile supports." />
+          <CardBody>
+            <ul className="space-y-1.5">
+              {profile.naicsCodes.map((code) => (
+                <li key={code} className="flex items-baseline gap-2 text-sm">
+                  <span className="font-mono text-xs text-slate-500">{code}</span>
+                  {/* Title looked up, never stored — a NAICS revision can't
+                      strand a stale title on a saved profile. */}
+                  <span className="text-slate-800">{naicsTitle(code) ?? "Unknown code"}</span>
+                </li>
+              ))}
+            </ul>
+          </CardBody>
+        </Card>
+      ) : null}
 
       {profile.skills.length > 0 ? (
         <Card>
