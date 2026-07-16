@@ -2,6 +2,7 @@ import { z } from "zod";
 import { GovConClearanceLevel, GovConFieldSource, GovConProfileStatus } from "@prisma/client";
 import { optionalDate, optionalNullableText, optionalNumber } from "@/lib/validation/common";
 import { parsePartialDate } from "@/lib/resume/dates";
+import { isNaicsCode, MAX_MEMBER_NAICS } from "@/lib/naics";
 
 /**
  * Member capability profile validation.
@@ -108,6 +109,29 @@ export const monthInputToDate = z
     return new Date(Date.UTC(year, month - 1, 1));
   });
 
+/**
+ * NAICS codes for a member profile.
+ *
+ * Re-validated here even though `lib/naics` already filtered the AI's output:
+ * that ran in the parse step, and this payload arrives from the browser, where
+ * anything could be in it. The closed vocabulary is the whole guarantee — an
+ * unknown code is dropped rather than rejected, matching how the review screen
+ * treats every other optional field (an unexpected value must not be able to
+ * block a member saving their profile).
+ */
+const naicsCodes = z
+  .union([z.array(z.string()), z.null()])
+  .optional()
+  .transform((v) => {
+    if (v === undefined) return undefined;
+    if (v === null) return [];
+    const seen = new Set<string>();
+    return v
+      .map((c) => c.trim())
+      .filter((c) => isNaicsCode(c) && !seen.has(c) && seen.add(c))
+      .slice(0, MAX_MEMBER_NAICS);
+  });
+
 export const skillSchema = z.object({
   name: z.string().trim().min(1, "Skill name is required").max(120),
   category: jsonNullableText,
@@ -173,6 +197,7 @@ export const applyResumeProposalSchema = z.object({
   laborCategory: jsonNullableText,
   yearsExperience: jsonNullableInt(80),
   clearanceLevel: z.nativeEnum(GovConClearanceLevel).default(GovConClearanceLevel.none),
+  naicsCodes,
   skills: z.array(skillSchema).max(100).default([]),
   certifications: z.array(certificationSchema).max(50).default([]),
   education: z.array(educationSchema).max(20).default([]),
@@ -197,6 +222,7 @@ export const saveMemberProfileSchema = z.object({
   laborCategory: jsonNullableText,
   yearsExperience: jsonNullableInt(80),
   clearanceLevel: z.nativeEnum(GovConClearanceLevel).default(GovConClearanceLevel.none),
+  naicsCodes,
   skills: z.array(skillSchema).max(100).default([]),
   certifications: z
     .array(certificationSchema.extend({ issuedOn: monthInputToDate, expiresOn: monthInputToDate }))

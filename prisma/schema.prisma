@@ -1437,6 +1437,14 @@ model GovConMemberProfile {
   clearanceGrantedOn DateTime?
   investigationType  String? // T5, T3, SSBI, ...
 
+  /// Up to 3 six-digit NAICS codes this member's experience supports, most
+  /// relevant first. Codes only — titles are looked up from the Census table in
+  /// `lib/naics`, so a NAICS revision can't leave a stale title in the database.
+  /// AI-proposed, validated against that table, and confirmed by the member.
+  /// String[] matches how NAICS is stored elsewhere here (Opportunity.naicsCodes,
+  /// GovConCapabilityStatement.naicsCapabilities).
+  naicsCodes String[]
+
   /// 0-100, recomputed on every write by `scoreCompleteness`. Denormalised so
   /// org-wide rollups don't have to re-derive it per member.
   completeness Int @default(0)

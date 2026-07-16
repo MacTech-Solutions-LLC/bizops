@@ -25,6 +25,20 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod/v4";
 import { logger } from "@/lib/logger";
 import { OperationalError } from "@/lib/errors";
+import { candidateNaics, validateNaics, type NaicsSuggestion } from "@/lib/naics";
+
+/**
+ * The NAICS vocabulary, rendered once at module load.
+ *
+ * It goes in the *system* prompt rather than the user turn on purpose: the
+ * render order is tools → system → messages, so a static list here sits in the
+ * cached prefix and the resume text (which changes every call) lands after the
+ * breakpoint. Inlining it alongside the resume would put a ~6k-token constant
+ * behind a varying prefix and cache nothing.
+ */
+const NAICS_CANDIDATE_LIST = candidateNaics()
+  .map((c) => `${c.code} ${c.title}`)
+  .join("\n");
 
 /** Pinned deliberately: extraction quality is validated against this model.
  * Bump only alongside a re-check of the review-step output. */
@@ -106,9 +120,35 @@ const extractionSchema = z.object({
     .describe(
       "3-5 achievement bullets suitable for a capability statement. Quantified where the resume supports it.",
     ),
+  naics: z
+    .array(
+      z.object({
+        code: z
+          .string()
+          .describe("A 6-digit NAICS code copied EXACTLY from the candidate list."),
+        rationale: z
+          .string()
+          .describe(
+            "One short sentence citing what in the resume supports this code. No name.",
+          ),
+      }),
+    )
+    .describe(
+      "The 3 NAICS industries this person's experience best supports, most relevant first. Fewer than 3 if the resume doesn't support 3.",
+    ),
 });
 
-export type ResumeExtraction = z.infer<typeof extractionSchema>;
+/**
+ * What this module returns — deliberately not the raw model output.
+ *
+ * `naics` is re-typed as `NaicsSuggestion[]`: the wire schema is what the model
+ * is asked for, but what leaves here has been through `validateNaics`, so every
+ * code is real and every title is the Census one. The type difference is the
+ * point — a caller cannot accidentally consume an unvalidated code.
+ */
+export type ResumeExtraction = Omit<z.infer<typeof extractionSchema>, "naics"> & {
+  naics: NaicsSuggestion[];
+};
 
 const SYSTEM_PROMPT = `You extract structured data from resumes for MacTech Solutions, a US federal government contractor. The extracted data populates a consultant's internal profile and their Capability Statement for federal bids.
 
@@ -118,7 +158,16 @@ Extraction rules:
 - Do not extract or infer security clearance. That is handled by a separate exact-match process. Ignore clearance statements entirely.
 - isFederal is true only when the resume shows the work was for a US federal customer, or as a prime/subcontractor on a federal contract. A commercial employer with no stated federal customer is false.
 - Write summary and capabilityHighlights in third person with no name ("Led a team of 6..."), so they drop directly into a capability statement.
-- Prefer the resume's own wording for skills and titles over your paraphrase.`;
+- Prefer the resume's own wording for skills and titles over your paraphrase.
+
+NAICS rules:
+- Every code you return MUST be copied verbatim from the candidate list below. Do not recall a code from memory, do not adapt one, and do not invent a plausible-looking one — a code that is not on the list is discarded, so guessing costs you the slot and gains nothing.
+- Rank by what the person has actually *done*, not by their employer's industry. A cybersecurity engineer at an aircraft manufacturer is Computer Systems Design Services, not Aircraft Manufacturing.
+- Return fewer than 3 rather than padding with a weak match. Each one has to be defensible from the resume text, and the member sees your rationale.
+
+<naics_candidates>
+${NAICS_CANDIDATE_LIST}
+</naics_candidates>`;
 
 function client(): Anthropic {
   // The SDK resolves ANTHROPIC_API_KEY (or an `ant auth login` profile) itself;
@@ -149,7 +198,16 @@ export async function extractWithAI(resumeText: string): Promise<ResumeExtractio
     response = await anthropic.messages.parse({
       model: RESUME_PARSE_MODEL,
       max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
+      // Cached: the prompt is a ~6k-token constant dominated by the NAICS
+      // table, and every resume parse re-sends it. The breakpoint goes on the
+      // last (only) system block, so tools+system cache together and the
+      // resume text — the sole varying part — stays after it. Opus needs a
+      // 4096-token prefix to cache at all, which the NAICS list clears on its
+      // own; if that list is ever trimmed below it, this silently stops
+      // caching rather than erroring. Check `cache_read_input_tokens`.
+      system: [
+        { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+      ],
       thinking: { type: "adaptive" },
       output_config: { format: zodOutputFormat(extractionSchema) },
       messages: [
@@ -195,13 +253,33 @@ export async function extractWithAI(resumeText: string): Promise<ResumeExtractio
     });
   }
 
+  // The model is instructed to copy codes from the candidate list, but an
+  // instruction is not a guarantee — `validateNaics` is what makes it one. A
+  // code that isn't in the Census table is dropped rather than shown to the
+  // member, and the title we keep is the official one, never the model's.
+  const naics = validateNaics(response.parsed_output.naics ?? []);
+  const naicsProposed = response.parsed_output.naics?.length ?? 0;
+  if (naicsProposed > naics.length) {
+    // Not an error — the guard did its job. Worth seeing if it climbs, since a
+    // rising reject rate means the prompt and the table have drifted apart.
+    logger.warn("resume_ai_naics_rejected", {
+      model: RESUME_PARSE_MODEL,
+      proposed: naicsProposed,
+      kept: naics.length,
+    });
+  }
+
   logger.info("resume_ai_extraction_ok", {
     model: RESUME_PARSE_MODEL,
     inputTokens: response.usage.input_tokens,
     outputTokens: response.usage.output_tokens,
+    // Zero on the first parse, then the whole NAICS table on every one after.
+    cacheReadTokens: response.usage.cache_read_input_tokens,
+    cacheWriteTokens: response.usage.cache_creation_input_tokens,
     skills: response.parsed_output.skills.length,
     experience: response.parsed_output.experience.length,
+    naics: naics.length,
   });
 
-  return response.parsed_output;
+  return { ...response.parsed_output, naics };
 }

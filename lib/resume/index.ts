@@ -21,6 +21,7 @@ import { isAppError } from "@/lib/errors";
 import { extractResumeText } from "@/lib/resume/extract-text";
 import { runHeuristics, type HeuristicResume } from "@/lib/resume/heuristics";
 import { extractWithAI, RESUME_PARSE_MODEL, type ResumeExtraction } from "@/lib/resume/ai";
+import type { NaicsSuggestion } from "@/lib/naics";
 
 export interface ProposedSkill {
   name: string;
@@ -70,6 +71,11 @@ export interface ResumeProposal {
   education: ProposedEducation[];
   experience: ProposedExperience[];
   capabilityHighlights: string[];
+  /** Top NAICS industries the experience supports. AI-proposed, validated
+   * against the Census table — see `lib/naics`. Empty without the AI pass:
+   * NAICS is a judgement about what someone's work *is*, which no regex can
+   * make, so the heuristic floor deliberately has none rather than a guess. */
+  naics: NaicsSuggestion[];
   /** Federal agencies seen anywhere in the resume — feeds the org rollup. */
   agencies: string[];
   meta: {
@@ -189,6 +195,7 @@ function baseProposal(
     education: [],
     experience: [],
     capabilityHighlights: [],
+    naics: [],
     agencies: heuristic.agencies,
     meta: {
       filename,
@@ -267,6 +274,7 @@ export async function parseResume(
       source: GovConFieldSource.ai,
     })),
     capabilityHighlights: ai.capabilityHighlights,
+    naics: ai.naics,
     meta: { ...proposal.meta, model: RESUME_PARSE_MODEL, aiStatus: "ok", aiMessage: null },
   };
 }

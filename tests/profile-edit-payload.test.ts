@@ -24,6 +24,7 @@ const STORED: StoredProfile = {
   laborCategory: "Information Systems Security Manager",
   yearsExperience: 19,
   clearanceLevel: "top_secret",
+  naicsCodes: ["541512", "541330"],
   skills: [
     {
       name: "RMF",

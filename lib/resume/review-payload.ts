@@ -27,6 +27,8 @@ export interface ReviewSelection {
   /** Raw string from a number input — "" when cleared. */
   yearsExperience: string;
   clearanceLevel: string;
+  /** Already filtered to the codes the member left checked. */
+  naicsCodes: string[];
   /** Already filtered to the rows the member left included. */
   skills: ProposedSkill[];
   certifications: ProposedCertification[];
@@ -50,6 +52,7 @@ export function buildProposalPayload(selection: ReviewSelection) {
     laborCategory: selection.laborCategory.trim(),
     yearsExperience: selection.yearsExperience.trim(),
     clearanceLevel: selection.clearanceLevel,
+    naicsCodes: selection.naicsCodes,
     skills: selection.skills,
     certifications: selection.certifications,
     education: selection.education,

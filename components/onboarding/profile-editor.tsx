@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { FormField, Select, TextArea, TextInput } from "@/components/ui/form";
 import { CLEARANCE_LEVELS } from "@/lib/ui/enums";
+import { candidateNaics, naicsTitle, MAX_MEMBER_NAICS } from "@/lib/naics";
 import { saveProfileAction, type FormState } from "@/app/(app)/onboarding/actions";
 import {
   serialiseProfilePayload,
@@ -28,6 +29,14 @@ import { ErrorBanner, SourceBadge, SubmitButton, fieldError } from "./form-bits"
  * `source` they were created with so a member can still see which entries came
  * from an AI extraction after they've been saved.
  */
+
+/** The picker's options. A <select> rather than a text field on purpose: a
+ * member typing a NAICS code is exactly the invented-code problem the AI path
+ * is built to avoid, so the UI doesn't offer the chance. */
+const NAICS_OPTIONS = [
+  { value: "", label: "Select a NAICS code…" },
+  ...candidateNaics().map((c) => ({ value: c.code, label: `${c.code} — ${c.title}` })),
+];
 
 const PROFICIENCY_OPTIONS = [
   { value: "familiar", label: "Familiar" },
@@ -222,6 +231,51 @@ export function ProfileEditor({
               value={draft.yearsExperience}
               onChange={(e) => set("yearsExperience", e.target.value)}
             />
+          </FormField>
+          <FormField
+            label="NAICS codes"
+            name="naicsCodes"
+            className="sm:col-span-2"
+            hint={`The industries your experience supports — up to ${MAX_MEMBER_NAICS}, most relevant first.`}
+            error={fieldError(state.issues, "naicsCodes")}
+          >
+            <div className="space-y-2">
+              {draft.naicsCodes.map((code, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Select
+                    options={NAICS_OPTIONS}
+                    value={code}
+                    aria-label={`NAICS code ${i + 1}`}
+                    onChange={(e) =>
+                      set(
+                        "naicsCodes",
+                        draft.naicsCodes.map((c, j) => (j === i ? e.target.value : c)),
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      set("naicsCodes", draft.naicsCodes.filter((_, j) => j !== i))
+                    }
+                    aria-label={`Remove NAICS code ${i + 1}`}
+                    className="shrink-0 rounded p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+              {draft.naicsCodes.length < MAX_MEMBER_NAICS ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => set("naicsCodes", [...draft.naicsCodes, ""])}
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Add a NAICS code
+                </Button>
+              ) : null}
+            </div>
           </FormField>
           <FormField
             label="Clearance level"

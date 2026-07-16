@@ -67,6 +67,8 @@ export interface ProfileEditorState {
   /** Raw string from a number input — "" when cleared. */
   yearsExperience: string;
   clearanceLevel: GovConClearanceLevel;
+  /** Six-digit codes, most relevant first. Titles are looked up, not stored. */
+  naicsCodes: string[];
   skills: EditableSkill[];
   certifications: EditableCertification[];
   education: EditableEducation[];
@@ -81,6 +83,7 @@ export interface StoredProfile {
   laborCategory: string | null;
   yearsExperience: number | null;
   clearanceLevel: GovConClearanceLevel;
+  naicsCodes: string[];
   skills: Array<{
     name: string;
     category: string | null;
@@ -138,6 +141,7 @@ export function toEditorState(profile: StoredProfile): ProfileEditorState {
     laborCategory: text(profile.laborCategory),
     yearsExperience: profile.yearsExperience != null ? String(profile.yearsExperience) : "",
     clearanceLevel: profile.clearanceLevel,
+    naicsCodes: [...profile.naicsCodes],
     skills: profile.skills.map((s) => ({
       name: s.name,
       category: s.category,
@@ -194,6 +198,7 @@ export function buildProfilePayload(state: ProfileEditorState) {
     laborCategory: state.laborCategory.trim(),
     yearsExperience: state.yearsExperience.trim(),
     clearanceLevel: state.clearanceLevel,
+    naicsCodes: state.naicsCodes,
     skills: state.skills
       .filter((s) => s.name.trim() !== "")
       .map((s) => ({ ...s, name: s.name.trim(), yearsExperience: s.yearsExperience.trim() })),
