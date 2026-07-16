@@ -134,7 +134,7 @@ const extractionSchema = z.object({
       }),
     )
     .describe(
-      "The 3 NAICS industries this person's experience best supports, most relevant first. Fewer than 3 if the resume doesn't support 3.",
+      "EVERY NAICS industry this person's experience genuinely supports, ranked most relevant first. Not a fixed number — return as many as the resume defends, and no more.",
     ),
 });
 
@@ -163,7 +163,9 @@ Extraction rules:
 NAICS rules:
 - Every code you return MUST be copied verbatim from the candidate list below. Do not recall a code from memory, do not adapt one, and do not invent a plausible-looking one — a code that is not on the list is discarded, so guessing costs you the slot and gains nothing.
 - Rank by what the person has actually *done*, not by their employer's industry. A cybersecurity engineer at an aircraft manufacturer is Computer Systems Design Services, not Aircraft Manufacturing.
-- Return fewer than 3 rather than padding with a weak match. Each one has to be defensible from the resume text, and the member sees your rationale.
+- Return every industry the resume defends, not a shortlist. Someone's work often spans several: an engineer who both runs RMF packages and teaches CMMC/STIG courses supports Computer Systems Design Services AND Computer Training — return both. A code that never surfaces is work nobody bids.
+- Breadth is not licence to pad. Each code must be defensible from something specific in the resume, and the member reads your rationale next to it. One weak code costs more trust than a missing one.
+- Rank strongest first. The order is the signal — the top of your list is what this person is; the tail is what they can also credibly do.
 
 <naics_candidates>
 ${NAICS_CANDIDATE_LIST}

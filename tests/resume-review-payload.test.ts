@@ -3,6 +3,14 @@ import { test } from "node:test";
 import type { ResumeProposal } from "@/lib/resume";
 import { buildProposalPayload, type ReviewSelection } from "@/lib/resume/review-payload";
 import { applyResumeProposalSchema } from "@/lib/validation/member-profile";
+import { allNaicsCodes, MAX_MEMBER_NAICS } from "@/lib/naics";
+
+/** More real codes than the bound, for the pathological-response case. */
+const NAICS_FIXTURE_CODES = Object.fromEntries(
+  allNaicsCodes()
+    .slice(0, MAX_MEMBER_NAICS + 5)
+    .map((c) => [c.code, c.title]),
+);
 
 /**
  * THE SEAM TEST.
@@ -190,15 +198,37 @@ test("a fabricated NAICS code cannot reach the database via the payload", () => 
   assert.deepEqual(parsed.naicsCodes, ["541512"]);
 });
 
-test("NAICS codes are de-duplicated and capped at three", () => {
+test("NAICS codes are de-duplicated, and breadth beyond three survives", () => {
+  // The cap is a sanity bound, not a shortlist. A cyber engineer who also
+  // teaches CMMC/STIG legitimately carries training codes alongside 541xxx —
+  // an earlier top-3 limit silently dropped them, and a code that never
+  // surfaces is work nobody bids.
   const selection = selectionFrom(PROPOSAL);
   const parsed = applyResumeProposalSchema.parse(
     buildProposalPayload({
       ...selection,
-      naicsCodes: ["541512", "541512", "541330", "541519", "561210"],
+      naicsCodes: ["541512", "541512", "541330", "541519", "611420", "611430", "611710"],
     }),
   );
-  assert.deepEqual(parsed.naicsCodes, ["541512", "541330", "541519"]);
+  assert.deepEqual(parsed.naicsCodes, [
+    "541512",
+    "541330",
+    "541519",
+    "611420",
+    "611430",
+    "611710",
+  ]);
+});
+
+test("a pathological number of NAICS codes is still bounded", () => {
+  // Breadth is the goal; unbounded is not. If a real profile ever hits this,
+  // the bound is wrong — not the profile.
+  const selection = selectionFrom(PROPOSAL);
+  const many = Object.keys(NAICS_FIXTURE_CODES);
+  const parsed = applyResumeProposalSchema.parse(
+    buildProposalPayload({ ...selection, naicsCodes: many }),
+  );
+  assert.equal(parsed.naicsCodes?.length, MAX_MEMBER_NAICS);
 });
 
 test("unchecking every NAICS code saves none rather than defaulting", () => {

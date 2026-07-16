@@ -236,7 +236,7 @@ export function ProfileEditor({
             label="NAICS codes"
             name="naicsCodes"
             className="sm:col-span-2"
-            hint={`The industries your experience supports — up to ${MAX_MEMBER_NAICS}, most relevant first.`}
+            hint="Every industry your experience supports, strongest first. Add as many as you can defend — a code you don't list is work that won't route to you."
             error={fieldError(state.issues, "naicsCodes")}
           >
             <div className="space-y-2">
