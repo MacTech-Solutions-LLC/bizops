@@ -120,6 +120,10 @@ test("unknown role grants nothing via the role map", () => {
  * [] and every non-admin member of an org was locked out of the whole app —
  * they could not even onboard their own profile.
  *
+ * The Hub cannot cover for a miss here: neither role's Suite template carries
+ * any org:govcon:* permission, so `resolveGrantedPermissions`'s entitlement
+ * branch contributes nothing for them and this map is the only grant path.
+ *
  * The tests above cover "member"/"viewer", which the Suite never emits. That is
  * why this went unnoticed: the map was only ever checked against itself. If a
  * role here starts failing, the Suite's vocabulary moved — fix the map, don't

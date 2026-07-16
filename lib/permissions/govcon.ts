@@ -89,10 +89,17 @@ const MANAGER_PERMISSIONS: GovConPermission[] = [
  * Role → permission mapping. Keys are lower-cased role names as the Hub sends
  * them; an unrecognised role grants nothing.
  *
- * This is not a fallback in practice — it is the *only* thing that grants
- * access. `resolveGrantedPermissions` also unions in the Hub's resolved
- * permissions, but the Suite defines no `org:govcon:*` permissions at all, so
- * that branch contributes nothing for anybody.
+ * For the roles real users actually hold, this is not a fallback — it is the
+ * *only* thing that grants access. `resolveGrantedPermissions` also unions in
+ * the Hub's resolved permissions, and the Suite does define 21 matching
+ * `org:govcon:*` strings — but only its `govcon_manager` / `govcon_contributor`
+ * templates carry any. The two roles its Clerk sync actually emits
+ * (`customer_admin`, `read_only_user`) have none, so for them the Hub
+ * contributes nothing and this map decides everything.
+ *
+ * Note also that `org:govcon:profile:self` and `:profile:manage` exist only
+ * here — the Suite has no such permissions — so profile access can never come
+ * from the Hub for anyone, whatever their role.
  *
  * Which makes the keys load-bearing, and they must match the Suite's real role
  * vocabulary (`lib/permissions.ts` there, written to `OrgUserAccess.role` — a
