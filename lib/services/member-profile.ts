@@ -25,6 +25,7 @@ import {
   scoreCompleteness,
   type CompletenessResult,
 } from "@/lib/domain/profile-completeness";
+import { pushProfileToHubInBackground } from "@/lib/hub/profile";
 import {
   applyResumeProposalSchema,
   saveMemberProfileSchema,
@@ -177,6 +178,7 @@ export async function updateProfile(
       return rescored;
     });
 
+    syncProfileToHub(updated);
     return { profile: updated, completeness: completenessFor(updated) };
   });
 }
@@ -187,6 +189,31 @@ export async function updateProfile(
  * member's complete reviewed set: a row they removed is absent from the payload
  * and must therefore disappear from the profile rather than linger.
  */
+/**
+ * Project the local profile onto the Hub's field set and push it (ADR-0003).
+ *
+ * bizops writes, other apps read. Called after the transaction commits, never
+ * inside it: the member's save is already durable by this point, and a
+ * cross-service call has no business holding a database transaction open or
+ * failing a save the member cares about.
+ *
+ * `naicsCodes` is a Postgres array, so its stored order is the order the member
+ * confirmed — which is exactly the rank the Hub records. Don't sort it here.
+ *
+ * Not sent: no name/email (bizops holds neither) and no clearance (ADR-0003
+ * keeps it out of the first slice).
+ */
+function syncProfileToHub(profile: MemberProfile): void {
+  pushProfileToHubInBackground(profile.hubUserId, {
+    headline: profile.headline,
+    summary: profile.summary,
+    laborCategory: profile.laborCategory,
+    yearsExperience: profile.yearsExperience,
+    naicsCodes: profile.naicsCodes,
+    confirmedAt: new Date().toISOString(),
+  });
+}
+
 async function clearSections(tx: Prisma.TransactionClient, profileId: string): Promise<void> {
   await tx.govConMemberSkill.deleteMany({ where: { profileId } });
   await tx.govConMemberCertification.deleteMany({ where: { profileId } });
@@ -257,6 +284,7 @@ export async function saveProfile(
       return rescored;
     });
 
+    syncProfileToHub(updated);
     return { profile: updated, completeness: completenessFor(updated) };
   });
 }
@@ -339,6 +367,7 @@ export async function applyResumeProposal(
       return rescored;
     });
 
+    syncProfileToHub(updated);
     return { profile: updated, completeness: completenessFor(updated) };
   });
 }
@@ -378,6 +407,7 @@ export async function publishProfile(
       return next;
     });
 
+    syncProfileToHub(updated);
     return { profile: updated, completeness: completenessFor(updated) };
   });
 }
