@@ -86,17 +86,44 @@ const MANAGER_PERMISSIONS: GovConPermission[] = [
 ];
 
 /**
- * Role → permission mapping. Keys are lower-cased Hub/Clerk role names. Admin
- * roles receive every permission. Used as the defensible fallback when the Hub
- * snapshot does not carry explicit resolved permissions (e.g. mock mode).
+ * Role → permission mapping. Keys are lower-cased role names as the Hub sends
+ * them; an unrecognised role grants nothing.
+ *
+ * For the roles real users actually hold, this is not a fallback — it is the
+ * *only* thing that grants access. `resolveGrantedPermissions` also unions in
+ * the Hub's resolved permissions, and the Suite does define 21 matching
+ * `org:govcon:*` strings — but only its `govcon_manager` / `govcon_contributor`
+ * templates carry any. The two roles its Clerk sync actually emits
+ * (`customer_admin`, `read_only_user`) have none, so for them the Hub
+ * contributes nothing and this map decides everything.
+ *
+ * Note also that `org:govcon:profile:self` and `:profile:manage` exist only
+ * here — the Suite has no such permissions — so profile access can never come
+ * from the Hub for anyone, whatever their role.
+ *
+ * Which makes the keys load-bearing, and they must match the Suite's real role
+ * vocabulary (`lib/permissions.ts` there, written to `OrgUserAccess.role` — a
+ * free-form String, not an enum). The Suite's Clerk sync emits exactly two:
+ *
+ *   Clerk "org:admin" → "customer_admin"
+ *   everyone else     → "read_only_user"
+ *
+ * `read_only_user` was missing here, so every non-admin member resolved to zero
+ * permissions and could not use the app at all — including onboarding their own
+ * profile.
+ *
+ * `member` is not a Suite role but is still load-bearing: hub-client's adapter
+ * falls back to it (`live.memberRoles?.[0] ?? "member"`) when a user has no
+ * membership row, and the mock fixtures use it. Don't remove it.
  */
 export const GOVCON_ROLE_PERMISSIONS: Record<string, GovConPermission[]> = {
   // Admin-equivalent roles → all permissions.
   mactech_super_admin: ALL_GOVCON_PERMISSIONS,
-  owner: ALL_GOVCON_PERMISSIONS,
-  admin: ALL_GOVCON_PERMISSIONS,
+  customer_owner: ALL_GOVCON_PERMISSIONS,
   customer_admin: ALL_GOVCON_PERMISSIONS,
   govcon_admin: ALL_GOVCON_PERMISSIONS,
+  owner: ALL_GOVCON_PERMISSIONS,
+  admin: ALL_GOVCON_PERMISSIONS,
   // Manager roles.
   govcon_manager: MANAGER_PERMISSIONS,
   capture_manager: MANAGER_PERMISSIONS,
@@ -106,8 +133,12 @@ export const GOVCON_ROLE_PERMISSIONS: Record<string, GovConPermission[]> = {
   govcon_contributor: CONTRIBUTOR_PERMISSIONS,
   contributor: CONTRIBUTOR_PERMISSIONS,
   member: CONTRIBUTOR_PERMISSIONS,
-  // Viewer / minimal roles.
+  // Viewer / minimal roles. `read_only_user` is the Suite's least-privilege
+  // baseline and what every non-admin member actually holds: read-only across
+  // the app, plus their own profile — consistent with VIEWER_PERMISSIONS' rule
+  // that every role manages its own profile.
   govcon_viewer: VIEWER_PERMISSIONS,
+  read_only_user: VIEWER_PERMISSIONS,
   viewer: VIEWER_PERMISSIONS,
   guest: VIEWER_PERMISSIONS,
 };
