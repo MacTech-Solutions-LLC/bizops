@@ -295,7 +295,7 @@ function ReviewStep({
         <Card>
           <CardHeader
             title="NAICS codes"
-            description="The industries your experience supports. Suggested by AI from a fixed list of real NAICS codes — never invented. Uncheck any that don't fit."
+            description="Every industry your experience supports, strongest first. Suggested by AI from a fixed list of real NAICS codes — never invented. Uncheck any that don't fit."
           />
           <CardBody>
             <ul className="space-y-2">

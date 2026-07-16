@@ -28,8 +28,20 @@ const CODES: Record<string, string> = table.codes;
 export const NAICS_REVISION = table.revision;
 export const NAICS_SOURCE_URL = table.sourceUrl;
 
-/** Max codes carried on a member profile. */
-export const MAX_MEMBER_NAICS = 3;
+/**
+ * A sanity bound, NOT a target.
+ *
+ * The goal is *every* industry a member's experience genuinely supports, ranked
+ * most-relevant first — not a fixed shortlist. A cap of 3 encoded an assumption
+ * that a person's work fits three industries, and it doesn't: a cyber engineer
+ * who also delivers CMMC/RMF/STIG instruction legitimately carries 541519 *and*
+ * 611420 (Computer Training), and the shortlist silently dropped the second one.
+ * Codes that never surface are codes nobody bids.
+ *
+ * This exists only to stop a pathological response writing hundreds of rows. If
+ * a real profile ever approaches it, the number is wrong — not the profile.
+ */
+export const MAX_MEMBER_NAICS = 20;
 
 export interface NaicsSuggestion {
   code: string;
@@ -55,7 +67,7 @@ export function allNaicsCodes(): Array<{ code: string; title: string }> {
 }
 
 /**
- * Keep only real codes, de-duplicated, capped at `MAX_MEMBER_NAICS`.
+ * Keep only real codes, de-duplicated, bounded by `MAX_MEMBER_NAICS`.
  *
  * Titles are replaced with the official one — a model that returns the right
  * code with invented wording should not get that wording onto a capability
