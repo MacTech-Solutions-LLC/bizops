@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import type { HubProfilePayload } from "@/lib/hub/profile";
 
@@ -59,4 +60,22 @@ test("unknown years of experience projects as null, never 0", () => {
     confirmedAt: "2026-07-16T00:00:00.000Z",
   };
   assert.equal(payload.yearsExperience, null);
+});
+
+test("the profile push uses its own token, never the general service token", () => {
+  // MACTECH_HUB_SERVICE_TOKEN is bizops' general credential: resolveAppAccess
+  // (lib/hub/client.ts), audit forwarding, and employee onboarding all read it.
+  // Pointing the profile push at it forces a choice between two bad outcomes —
+  // grant profile_write to a token that already unlocks authority resolution,
+  // or swap in a profile_write-only key and break login for the whole app.
+  // Neither is a tradeoff anyone should make by accident, so this pins it.
+  const source = readFileSync(new URL("../lib/hub/profile.ts", import.meta.url), "utf8");
+  assert.ok(
+    source.includes("process.env.MACTECH_HUB_PROFILE_TOKEN"),
+    "profile push must read its own credential",
+  );
+  assert.ok(
+    !/process\.env\.MACTECH_HUB_SERVICE_TOKEN/.test(source),
+    "profile push must NOT read the general service token",
+  );
 });

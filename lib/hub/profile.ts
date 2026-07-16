@@ -43,6 +43,25 @@ function hubBaseUrl(): string | null {
 }
 
 /**
+ * The profile-write credential — deliberately its own env var.
+ *
+ * NOT `MACTECH_HUB_SERVICE_TOKEN`. That one is bizops' general service token and
+ * carries the scopes `resolveAppAccess` (lib/hub/client.ts), audit forwarding
+ * (lib/audit.ts), and employee onboarding need. Reusing it here would force one
+ * of two bad outcomes: either this key gets `profile_write` *added* to a token
+ * that already unlocks authority resolution — so a leak here is a leak of
+ * everything — or someone swaps in a `profile_write`-only key and silently
+ * breaks login for the whole app.
+ *
+ * A separate variable keeps the blast radius of a profile-write leak to
+ * profiles, and lets it rotate on its own schedule. It is also the only scope
+ * here that can change data a member confirmed about themselves.
+ */
+function profileWriteToken(): string | undefined {
+  return process.env.MACTECH_HUB_PROFILE_TOKEN;
+}
+
+/**
  * PUT the profile to the Hub. Resolves to whether it landed.
  *
  * Never throws: every caller is on the member's save path, and this call is not
@@ -56,8 +75,11 @@ export async function pushProfileToHub(
   if (getHubAuthorityMode() !== "live") return false;
 
   const base = hubBaseUrl();
-  const token = process.env.MACTECH_HUB_SERVICE_TOKEN;
+  const token = profileWriteToken();
   if (!base || !token) {
+    // Unconfigured is not an error: the Hub write is additive to a profile that
+    // is already saved locally, so a deployment without the key degrades to
+    // "bizops-only" rather than failing a member's save.
     logger.warn("hub_profile_push_unconfigured", {
       hasUrl: Boolean(base),
       hasToken: Boolean(token),
