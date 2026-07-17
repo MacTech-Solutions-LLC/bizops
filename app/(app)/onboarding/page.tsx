@@ -8,6 +8,8 @@ import { ErrorState, PageHeader, ProgressBar } from "@/components/ui/misc";
 import { cn } from "@/lib/ui/cn";
 import { ResumeReview } from "@/components/onboarding/resume-review";
 import { ProfilePanel } from "@/components/onboarding/profile-panel";
+import { CapabilityStatementSection } from "@/components/onboarding/capability-statement";
+import { getCapabilityStatement } from "@/lib/services/capability-statement";
 import { isProfileStarted } from "@/lib/domain/member-profile";
 
 export const metadata: Metadata = { title: "Onboarding" };
@@ -36,6 +38,12 @@ export default async function OnboardingPage() {
       };
     }
 
+    // The capability statement is the document the profile feeds, so it belongs
+    // right under the profile — but only once there's a profile to build it
+    // from. An empty profile has nothing to draft, and the upload wizard owns
+    // the screen until then.
+    const capability = started ? await getCapabilityStatement(ctx) : null;
+
     body = (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -44,6 +52,13 @@ export default async function OnboardingPage() {
           ) : (
             <ResumeReview />
           )}
+
+          {started && capability ? (
+            <CapabilityStatementSection
+              statement={capability.statement}
+              facts={capability.facts}
+            />
+          ) : null}
         </div>
 
         <div className="space-y-4">

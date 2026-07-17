@@ -1462,9 +1462,64 @@ model GovConMemberProfile {
   education      GovConMemberEducation[]
   experience     GovConMemberExperience[]
 
+  capabilityStatement GovConCapabilityStatement?
+
   @@unique([hubOrganizationId, hubUserId])
   @@index([hubOrganizationId])
   @@index([hubOrganizationId, status])
+}
+
+/// The member's Capability Statement — the customer-facing document the profile
+/// feeds. One per profile.
+///
+/// Deliberately narrow: this stores ONLY the member-confirmed *narrative* — the
+/// prose an AI drafts and the member edits. Every hard fact on the rendered
+/// statement (company CAGE/UEI/NAICS, clearance, certifications, federal past
+/// performance) is assembled live from already-confirmed sources at render
+/// time, never copied in here. That keeps the never-guess rule intact — a model
+/// never gets to *assert* a fact that lands on a federal document, it only
+/// phrases facts the member already confirmed — and it means a corrected NAICS
+/// code or a renewed clearance shows up without regenerating the statement.
+///
+/// AI-drafted, member-confirmed: `generatedAt`/`generateModel` record what
+/// produced the draft; `confirmedAt` records that a human accepted it. A draft
+/// is never persisted here until the member saves it.
+model GovConCapabilityStatement {
+  id                String @id @default(cuid())
+  hubOrganizationId String
+  hubUserId         String
+
+  /// 1:1 with the profile. Cascades: a statement has no meaning without the
+  /// profile it summarises.
+  profileId String              @unique
+  profile   GovConMemberProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  status GovConProfileStatus @default(draft)
+
+  /// The statement's own professional summary. Seeded from the profile summary
+  /// but editable — the capability-statement voice is not always the profile's.
+  professionalSummary String?
+
+  /// Member-confirmed bullet lists. AI proposes, the member edits and accepts;
+  /// what is stored is what the member confirmed, in the order they confirmed.
+  coreCompetencies         String[]
+  differentiators          String[]
+  pastPerformanceHighlights String[]
+
+  // --- Draft provenance ---
+  generatedAt   DateTime? // when an AI draft was last produced
+  generateModel String? // model id that produced the draft
+  /// When suite data (the member's own Hub capability profile) last fed a draft.
+  /// Null when the round-trip was unavailable and the draft used local data only.
+  hubSyncedAt   DateTime?
+  /// When the member last confirmed and saved this statement.
+  confirmedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([hubOrganizationId, hubUserId])
+  @@index([hubOrganizationId])
 }
 
 model GovConMemberSkill {

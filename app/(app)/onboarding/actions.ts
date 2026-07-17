@@ -6,6 +6,11 @@ import { isAppError, ValidationError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { parseResume, type ResumeProposal } from "@/lib/resume";
 import { applyResumeProposal, publishProfile, saveProfile } from "@/lib/services/member-profile";
+import {
+  generateCapabilityStatement,
+  saveCapabilityStatement,
+  type StatementDraftResult,
+} from "@/lib/services/capability-statement";
 
 export interface FormState {
   ok: boolean;
@@ -15,6 +20,10 @@ export interface FormState {
 
 export interface ParseState extends FormState {
   proposal?: ResumeProposal;
+}
+
+export interface StatementDraftState extends FormState {
+  draft?: StatementDraftResult;
 }
 
 /**
@@ -145,6 +154,71 @@ export async function saveProfileAction(
     if (err instanceof ValidationError) {
       // Same reasoning as applyProposalAction: name the sections the member can
       // see rather than promise highlighting on paths like `experience.0.startedOn`.
+      return { ok: false, error: "We couldn't save these details:", issues: err.issues };
+    }
+    if (isAppError(err)) return { ok: false, error: err.userMessage };
+    throw err;
+  }
+
+  revalidatePath("/onboarding");
+  return { ok: true };
+}
+
+/**
+ * Draft the member's capability statement from their profile, the company
+ * identity, and their own Hub capability profile (the suite round-trip).
+ *
+ * Returns the draft for review and persists NOTHING — the never-guess rule
+ * applies to a document too: a model-drafted statement reaches the database only
+ * after `saveStatementAction`, i.e. only after the member has seen and confirmed
+ * every line. AI failure degrades to a deterministic seed inside the service, so
+ * this action does not surface it as an error.
+ */
+export async function generateStatementAction(
+  _prev: StatementDraftState,
+  _formData: FormData,
+): Promise<StatementDraftState> {
+  const ctx = await requireGovConContext();
+  try {
+    const draft = await generateCapabilityStatement(ctx, ctx.actorHubUserId);
+    logger.info("capability_statement_drafted", {
+      actorHubUserId: ctx.actorHubUserId,
+      aiStatus: draft.meta.aiStatus,
+      fromSuite: draft.meta.fromSuite,
+    });
+    return { ok: true, draft };
+  } catch (err) {
+    if (isAppError(err)) return { ok: false, error: err.userMessage };
+    logger.exception("capability_statement_generate_failed", err, {
+      actorHubUserId: ctx.actorHubUserId,
+    });
+    return { ok: false, error: "We couldn't draft your statement. Please try again." };
+  }
+}
+
+/** Persist the capability statement the member reviewed and confirmed. */
+export async function saveStatementAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const ctx = await requireGovConContext();
+  const raw = formData.get("payload");
+
+  if (typeof raw !== "string") {
+    return { ok: false, error: "Nothing to save. Please regenerate and try again." };
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: "Nothing to save. Please regenerate and try again." };
+  }
+
+  try {
+    await saveCapabilityStatement(ctx, ctx.actorHubUserId, payload);
+  } catch (err) {
+    if (err instanceof ValidationError) {
       return { ok: false, error: "We couldn't save these details:", issues: err.issues };
     }
     if (isAppError(err)) return { ok: false, error: err.userMessage };
