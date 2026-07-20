@@ -8,7 +8,10 @@ export const runtime = "nodejs";
 
 /**
  * GET   /api/directory/contacts/:id?organizationId=…
- * PATCH /api/directory/contacts/:id  body: { organizationId, ...fields }
+ * PATCH /api/directory/contacts/:id  body: { organizationId, directoryOrganizationId?, ...fields }
+ *
+ * `organizationId` is always the Hub tenant; the DirectoryOrganization link
+ * travels as `directoryOrganizationId` (see contacts/route.ts).
  */
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -29,6 +32,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const ctx = directoryServiceContext(sourceApp, body.organizationId);
     delete body.organizationId;
+    if ("directoryOrganizationId" in body) {
+      body.organizationId = body.directoryOrganizationId;
+      delete body.directoryOrganizationId;
+    }
     const contact = await updateDirectoryContact(ctx, params.id, body);
     return NextResponse.json({ contact });
   } catch (err) {

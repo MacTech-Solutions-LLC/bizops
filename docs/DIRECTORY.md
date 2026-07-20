@@ -49,12 +49,15 @@ x-mactech-service-app: <caller app key, e.g. "fieldops">
 ```
 
 `organizationId` is always the **Hub tenant org id** — query param on GET,
-body field on POST/PATCH.
+body field on POST/PATCH. To link a contact to a `DirectoryOrganization`
+record, send the link as `directoryOrganizationId` (query filter on GET, body
+field on POST/PATCH) — never as `organizationId`, which is reserved for the
+tenant on this surface.
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/directory/contacts?organizationId=…&q=&kind=&status=&tag=&directoryOrganizationId=` | List/search people |
-| POST | `/api/directory/contacts` | Create a person (`{ organizationId, name, ... }`) |
+| POST | `/api/directory/contacts` | Create a person (`{ organizationId, name, directoryOrganizationId?, ... }`) |
 | GET | `/api/directory/contacts/:id?organizationId=…` | Fetch one person |
 | PATCH | `/api/directory/contacts/:id` | Update (`{ organizationId, ...fields }`; `""` clears a field) |
 | GET | `/api/directory/organizations?organizationId=…&q=&orgType=&status=` | List/search organizations |

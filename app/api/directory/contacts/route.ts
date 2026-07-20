@@ -10,10 +10,13 @@ export const runtime = "nodejs";
  * Cross-app Directory contacts API (service-token auth — see lib/service-auth).
  *
  * GET  /api/directory/contacts?organizationId=…&q=&kind=&status=&tag=&directoryOrganizationId=…
- * POST /api/directory/contacts  body: { organizationId, name, ...fields }
+ * POST /api/directory/contacts  body: { organizationId, directoryOrganizationId?, name, ...fields }
  *
- * `organizationId` is the Hub tenant; `directoryOrganizationId` filters by a
- * DirectoryOrganization record.
+ * On this surface `organizationId` ALWAYS means the Hub tenant, in query and
+ * body alike; the link to a DirectoryOrganization record travels as
+ * `directoryOrganizationId` everywhere. The two must never share a name in
+ * the same payload: an early caller that sent the link as `organizationId`
+ * had it consumed as the tenant, silently mis-scoping the contact.
  */
 export async function GET(request: Request) {
   try {
@@ -41,6 +44,12 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const ctx = directoryServiceContext(sourceApp, body.organizationId);
     delete body.organizationId;
+    // Remap the org-link field onto the service-layer's column name now that
+    // the tenant id has been consumed.
+    if ("directoryOrganizationId" in body) {
+      body.organizationId = body.directoryOrganizationId;
+      delete body.directoryOrganizationId;
+    }
     const contact = await createDirectoryContact(ctx, body);
     return NextResponse.json({ contact }, { status: 201 });
   } catch (err) {
