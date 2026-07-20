@@ -25,6 +25,10 @@ export const GOVCON_PERMISSIONS = {
   GOVCON_SBIR_MANAGE: "org:govcon:sbir:manage",
   GOVCON_PARTNERS_MANAGE: "org:govcon:partners:manage",
   GOVCON_CONTACTS_MANAGE: "org:govcon:contacts:manage",
+  /** Company-wide address book (Directory people + organizations). Separate
+   * from capture contacts so cross-app service callers can be granted exactly
+   * this and nothing else. */
+  GOVCON_DIRECTORY_MANAGE: "org:govcon:directory:manage",
   GOVCON_TASKS_MANAGE: "org:govcon:tasks:manage",
   GOVCON_DOCUMENTS_MANAGE: "org:govcon:documents:manage",
   GOVCON_READINESS_MANAGE: "org:govcon:readiness:manage",
@@ -66,6 +70,7 @@ const CONTRIBUTOR_PERMISSIONS: GovConPermission[] = [
   GOVCON_PERMISSIONS.GOVCON_PROPOSAL_REVIEW,
   GOVCON_PERMISSIONS.GOVCON_SBIR_MANAGE,
   GOVCON_PERMISSIONS.GOVCON_CONTACTS_MANAGE,
+  GOVCON_PERMISSIONS.GOVCON_DIRECTORY_MANAGE,
   GOVCON_PERMISSIONS.GOVCON_TASKS_MANAGE,
   GOVCON_PERMISSIONS.GOVCON_DOCUMENTS_MANAGE,
 ];

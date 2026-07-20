@@ -6,6 +6,9 @@ const isPublicRoute = createRouteMatcher([
   "/access-denied",
   "/api/health",
   "/api/build-info",
+  // Machine-to-machine surface — auth is the Directory service token verified
+  // in the route (lib/service-auth.ts), not a Clerk session.
+  "/api/directory(.*)",
   "/api/smoke/hub-mock",
   "/_/mactech-manifest.json",
 ]);

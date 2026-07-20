@@ -42,6 +42,7 @@ the browser bundle (`NEXT_PUBLIC_*`, non-secret) · **Server**: server-only ·
 | `MACTECH_HUB_URL` | Opt | Server | Both | Hub base URL (default `https://www.suite.mactechsolutionsllc.com`). |
 | `MACTECH_HUB_SERVICE_TOKEN` | Req in `live` | Server / Secret | Prod | Hub ApiKey scoped `app_authority_resolve` + `audit_ingest`, tagged `bizops`. |
 | `MACTECH_APP_KEY` | Opt | Server | Both | Must be `bizops`. |
+| `MACTECH_DIRECTORY_SERVICE_TOKEN` | Opt | Server / Secret | Both | Inbound service token for the cross-app Directory API (`/api/directory/*`, see `docs/DIRECTORY.md`). Unset = endpoints return 503. |
 | `NODE_ENV` | Opt | Server | Both | `production` in Railway. |
 | `SEED_ALLOW_PROD` | Opt | Server | Prod | Guard override for the demo seed; leave unset in production. |
 | `RAILWAY_GIT_*`, `RAILWAY_SERVICE_ID`, `RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT_NAME` | Auto | Server | Prod | Injected by Railway; surfaced by `/api/build-info`. |

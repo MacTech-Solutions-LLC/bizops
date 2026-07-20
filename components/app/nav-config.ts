@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   BarChart3,
+  BookUser,
   Building2,
   CalendarDays,
   ClipboardCheck,
@@ -60,6 +61,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Teaming Partners", href: "/partners", icon: Handshake, matchPrefix: true },
       { label: "Contract Vehicles", href: "/vehicles", icon: ScrollText, matchPrefix: true },
       { label: "Agencies & Contacts", href: "/contacts", icon: Building2, matchPrefix: true },
+      { label: "Directory", href: "/directory", icon: BookUser, matchPrefix: true },
     ],
   },
   {

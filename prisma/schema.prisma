@@ -1502,8 +1502,8 @@ model GovConCapabilityStatement {
 
   /// Member-confirmed bullet lists. AI proposes, the member edits and accepts;
   /// what is stored is what the member confirmed, in the order they confirmed.
-  coreCompetencies         String[]
-  differentiators          String[]
+  coreCompetencies          String[]
+  differentiators           String[]
   pastPerformanceHighlights String[]
 
   // --- Draft provenance ---
@@ -1600,4 +1600,110 @@ model GovConMemberExperience {
 
   @@index([profileId])
   @@index([profileId, isFederal])
+}
+
+// ---------------------------------------------------------------------------
+// Directory: company-wide address book (people + organizations)
+//
+// The canonical MacTech contact store, distinct from the capture-focused
+// GovConContact (acquisition roles, influence). Sibling suite apps create and
+// pull Directory entries through the service-token API (`/api/directory/*`),
+// so fields stay app-neutral. Closed vocabularies are Prisma enums; anything
+// free-form is an explicit nullable text field.
+// ---------------------------------------------------------------------------
+
+enum DirectoryOrgType {
+  INTERNAL
+  GOVERNMENT
+  PRIME
+  SUBCONTRACTOR
+  TEAMING_PARTNER
+  VENDOR
+  CONSULTANT
+  OTHER
+}
+
+enum DirectoryContactKind {
+  INTERNAL
+  EXTERNAL
+}
+
+enum DirectoryEntryStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model DirectoryOrganization {
+  id                String               @id @default(cuid())
+  hubOrganizationId String
+  name              String
+  orgType           DirectoryOrgType     @default(OTHER)
+  abbreviation      String?
+  website           String?
+  email             String?
+  phone             String?
+  addressLine1      String?
+  addressLine2      String?
+  city              String?
+  state             String?
+  postalCode        String?
+  country           String?
+  uei               String?
+  cageCode          String?
+  tags              String[]
+  notes             String?
+  status            DirectoryEntryStatus @default(ACTIVE)
+  /// Suite app that created the record ("bizops", "taplink", ...).
+  sourceApp         String?
+  isDemo            Boolean              @default(false)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  contacts DirectoryContact[]
+
+  @@unique([hubOrganizationId, name])
+  @@index([hubOrganizationId])
+  @@index([hubOrganizationId, orgType])
+}
+
+model DirectoryContact {
+  id                String                 @id @default(cuid())
+  hubOrganizationId String
+  name              String
+  kind              DirectoryContactKind   @default(EXTERNAL)
+  title             String?
+  department        String?
+  organizationId    String?
+  organization      DirectoryOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  /// Free-text org name when the contact is not linked to a Directory org.
+  organizationName  String?
+  email             String?
+  phone             String?
+  mobile            String?
+  addressLine1      String?
+  addressLine2      String?
+  city              String?
+  state             String?
+  postalCode        String?
+  country           String?
+  linkedinUrl       String?
+  tags              String[]
+  notes             String?
+  status            DirectoryEntryStatus   @default(ACTIVE)
+  /// Suite app that created the record ("bizops", "taplink", ...).
+  sourceApp         String?
+  /// For INTERNAL contacts: the suite member's Hub user id.
+  hubUserId         String?
+  isDemo            Boolean                @default(false)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([hubOrganizationId])
+  @@index([organizationId])
+  @@index([hubOrganizationId, kind])
+  @@index([hubOrganizationId, email])
 }

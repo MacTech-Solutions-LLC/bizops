@@ -32,6 +32,9 @@ export interface GovConContext {
   /** Resolved granted permissions. */
   permissions: ReadonlySet<GovConPermission>;
   clerkOrgId?: string | null;
+  /** Suite app acting on behalf of the tenant. Absent for interactive bizops
+   * sessions; set by the service-token API so writes record their origin. */
+  sourceApp?: string | null;
 }
 
 /**
