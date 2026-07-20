@@ -139,10 +139,10 @@ describe("directory service", { skip: !hasDatabase && "no DATABASE_URL" }, () =>
   });
 
   test("service-context writes record the source app and service actor", async () => {
-    const svcCtx = directoryServiceContext("taplink", TENANT_A);
-    const created = await createDirectoryContact(svcCtx, { name: "From Taplink" });
-    assert.equal(created.sourceApp, "taplink");
-    assert.equal(created.createdBy, "service:taplink");
+    const svcCtx = directoryServiceContext("fieldops", TENANT_A);
+    const created = await createDirectoryContact(svcCtx, { name: "From Fieldops" });
+    assert.equal(created.sourceApp, "fieldops");
+    assert.equal(created.createdBy, "service:fieldops");
     // Service context only holds directory permissions.
     assert.equal(svcCtx.permissions.has(GOVCON_PERMISSIONS.GOVCON_DIRECTORY_MANAGE), true);
     assert.equal(svcCtx.permissions.size, 2);
@@ -179,19 +179,19 @@ describe("directory service auth", () => {
       (err: unknown) => err instanceof UnauthenticatedError,
     );
     const ok = requireDirectoryServiceCaller(
-      req({ authorization: `Bearer ${TOKEN}`, "x-mactech-service-app": "Taplink" }),
+      req({ authorization: `Bearer ${TOKEN}`, "x-mactech-service-app": "Fieldops" }),
     );
-    assert.equal(ok.sourceApp, "taplink");
+    assert.equal(ok.sourceApp, "fieldops");
     delete process.env.MACTECH_DIRECTORY_SERVICE_TOKEN;
   });
 
   test("service context requires a tenant org id", () => {
     assert.throws(
-      () => directoryServiceContext("taplink", ""),
+      () => directoryServiceContext("fieldops", ""),
       (err: unknown) => err instanceof ValidationError,
     );
-    const ctx = directoryServiceContext("taplink", " org_123 ");
+    const ctx = directoryServiceContext("fieldops", " org_123 ");
     assert.equal(ctx.tenantOrgId, "org_123");
-    assert.equal(ctx.actorHubUserId, "service:taplink");
+    assert.equal(ctx.actorHubUserId, "service:fieldops");
   });
 });

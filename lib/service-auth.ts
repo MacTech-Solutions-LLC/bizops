@@ -9,7 +9,7 @@
  *
  * Contract (all required):
  *   authorization: Bearer <MACTECH_DIRECTORY_SERVICE_TOKEN>
- *   x-mactech-service-app: <caller app key, e.g. "taplink">
+ *   x-mactech-service-app: <caller app key, e.g. "fieldops">
  *   organizationId: Hub org id, as a query param (GET) or body field (POST/PATCH)
  *
  * The token is suite-internal: any holder may act on any tenant's directory,

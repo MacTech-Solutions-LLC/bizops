@@ -45,7 +45,7 @@ Headers on every request:
 
 ```
 authorization: Bearer $MACTECH_DIRECTORY_SERVICE_TOKEN
-x-mactech-service-app: <caller app key, e.g. "taplink">
+x-mactech-service-app: <caller app key, e.g. "fieldops">
 ```
 
 `organizationId` is always the **Hub tenant org id** — query param on GET,
@@ -65,7 +65,7 @@ Example — pull all external contracting contacts:
 ```bash
 curl -s "https://bizops.mactechsolutionsllc.com/api/directory/contacts?organizationId=$ORG&kind=EXTERNAL" \
   -H "authorization: Bearer $MACTECH_DIRECTORY_SERVICE_TOKEN" \
-  -H "x-mactech-service-app: taplink"
+  -H "x-mactech-service-app: fieldops"
 ```
 
 Example — create a contact from another app:
@@ -73,7 +73,7 @@ Example — create a contact from another app:
 ```bash
 curl -s -X POST "https://bizops.mactechsolutionsllc.com/api/directory/contacts" \
   -H "authorization: Bearer $MACTECH_DIRECTORY_SERVICE_TOKEN" \
-  -H "x-mactech-service-app: taplink" \
+  -H "x-mactech-service-app: fieldops" \
   -H "content-type: application/json" \
   -d '{"organizationId":"'$ORG'","name":"Jane Doe","kind":"EXTERNAL","email":"jane@agency.gov","tags":"contracting, ko"}'
 ```
