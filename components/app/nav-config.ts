@@ -49,7 +49,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Execution",
     items: [
       { label: "Tasks", href: "/tasks", icon: ListChecks },
-      { label: "Team", href: "/team", icon: Users },
+      { label: "Team", href: "/team", icon: Users, matchPrefix: true },
       { label: "Calendar", href: "/calendar", icon: CalendarDays },
       { label: "Documents", href: "/documents", icon: FileText },
       { label: "Activity", href: "/activity", icon: Activity },

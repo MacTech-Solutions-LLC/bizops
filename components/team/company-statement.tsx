@@ -2,45 +2,37 @@
 
 import { useMemo, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import {
-  CheckCircle2,
-  Info,
-  Pencil,
-  RefreshCw,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { CheckCircle2, Info, Pencil, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BulletEditor } from "@/components/ui/bullet-editor";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { FormField, TextArea } from "@/components/ui/form";
 import {
-  generateStatementAction,
-  saveStatementAction,
+  generateCompanyStatementAction,
+  saveCompanyStatementAction,
+  type CompanyDraftState,
   type FormState,
-  type StatementDraftState,
-} from "@/app/(app)/onboarding/actions";
-import type { StatementFacts } from "@/lib/capability-statement/assemble";
-import type { StoredStatementView } from "@/lib/services/capability-statement";
-import { serialiseStatementPayload } from "@/lib/capability-statement/payload";
-import { ErrorBanner, SubmitButton } from "./form-bits";
+} from "@/app/(app)/team/company-statement/actions";
+import type { CompanyStatementFacts } from "@/lib/company-statement/assemble";
+import type { StoredCompanyStatementView } from "@/lib/services/company-statement";
+import { serialiseCompanyStatementPayload } from "@/lib/company-statement/payload";
+import { ErrorBanner, SubmitButton } from "@/components/onboarding/form-bits";
 
 /**
- * The "Capability Statement" section of My Profile.
+ * The company-wide Capability Statement screen.
  *
- * The document the profile feeds. Three states over one stored record: none yet
- * (offer to draft it), reviewing a fresh AI draft, and viewing a saved one. The
- * narrative is AI-drafted and member-confirmed; the hard facts beside it
- * (company identity, NAICS, clearance, certifications, past performance) are
- * assembled live from confirmed sources on the server and rendered read-only
- * here — this component never lets a fact be typed onto the statement.
+ * Same three states as the member statement over one stored record — none yet
+ * (offer to draft), reviewing a fresh AI draft, viewing the saved one — with
+ * one difference: only managers generate, edit, and confirm. Everyone else
+ * gets the read-only view. The aggregated hard facts beside the narrative are
+ * assembled live from published member profiles on the server and rendered
+ * read-only here.
  */
 
 type Mode = "view" | "review";
 
-/** The read-only hard-facts block, shown in both review and view modes so the
- * member always sees the whole statement, not just the part they edit. */
-function FactsBlock({ facts, fromSuite }: { facts: StatementFacts; fromSuite: boolean }) {
+/** The live aggregated-facts block — team-wide, no individual names. */
+function CompanyFactsBlock({ facts }: { facts: CompanyStatementFacts }) {
   return (
     <div className="space-y-4">
       {facts.company ? (
@@ -63,28 +55,40 @@ function FactsBlock({ facts, fromSuite }: { facts: StatementFacts; fromSuite: bo
       ) : null}
 
       <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {facts.laborCategory ? (
-          <div>
-            <dt className="text-xs font-medium text-slate-400">Labor category</dt>
-            <dd className="text-sm text-slate-800">{facts.laborCategory}</dd>
-          </div>
-        ) : null}
-        {facts.yearsExperience != null ? (
-          <div>
-            <dt className="text-xs font-medium text-slate-400">Experience</dt>
-            <dd className="text-sm text-slate-800">{facts.yearsExperience} years</dd>
-          </div>
-        ) : null}
         <div>
-          <dt className="text-xs font-medium text-slate-400">Clearance</dt>
-          <dd className="text-sm text-slate-800">{facts.clearanceLabel}</dd>
+          <dt className="text-xs font-medium text-slate-400">Published members</dt>
+          <dd className="text-sm text-slate-800">{facts.teamSize}</dd>
         </div>
+        {facts.laborCategories.length > 0 ? (
+          <div className="sm:col-span-2">
+            <dt className="text-xs font-medium text-slate-400">Labor categories</dt>
+            <dd className="text-sm text-slate-800">{facts.laborCategories.join(" · ")}</dd>
+          </div>
+        ) : null}
       </dl>
+
+      {facts.clearanceMix.length > 0 ? (
+        <div>
+          <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">
+            Clearance mix
+          </h4>
+          <ul className="flex flex-wrap gap-2">
+            {facts.clearanceMix.map((c) => (
+              <li
+                key={c.label}
+                className="rounded-full bg-slate-50 px-2.5 py-1 text-xs text-slate-700 ring-1 ring-slate-200"
+              >
+                {c.count} × {c.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {facts.naics.length > 0 ? (
         <div>
           <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">
-            NAICS codes
+            NAICS coverage
           </h4>
           <ul className="space-y-1">
             {facts.naics.map((n) => (
@@ -100,16 +104,16 @@ function FactsBlock({ facts, fromSuite }: { facts: StatementFacts; fromSuite: bo
       {facts.certifications.length > 0 ? (
         <div>
           <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">
-            Certifications
+            Team certifications
           </h4>
           <ul className="flex flex-wrap gap-2">
-            {facts.certifications.map((c, i) => (
+            {facts.certifications.map((c) => (
               <li
-                key={i}
+                key={c.name}
                 className="rounded-full bg-slate-50 px-2.5 py-1 text-xs text-slate-700 ring-1 ring-slate-200"
               >
                 {c.name}
-                {c.issuer ? <span className="text-slate-400"> · {c.issuer}</span> : null}
+                {c.count > 1 ? <span className="text-slate-400"> × {c.count}</span> : null}
               </li>
             ))}
           </ul>
@@ -119,13 +123,13 @@ function FactsBlock({ facts, fromSuite }: { facts: StatementFacts; fromSuite: bo
       {facts.pastPerformance.length > 0 ? (
         <div>
           <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">
-            Past performance
+            Federal past performance
           </h4>
           <ul className="divide-y divide-slate-100">
             {facts.pastPerformance.map((p, i) => (
               <li key={i} className="py-1.5">
                 <p className="text-sm text-slate-800">
-                  {[p.role, p.organization].filter(Boolean).join(" · ")}
+                  {p.organization}
                   {p.agency ? (
                     <span className="ml-1.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-200">
                       {p.agency}
@@ -143,22 +147,19 @@ function FactsBlock({ facts, fromSuite }: { facts: StatementFacts; fromSuite: bo
 
       <p className="flex items-start gap-1.5 text-xs text-slate-400">
         <Info className="mt-0.5 h-3 w-3 shrink-0" />
-        These are pulled live from your confirmed profile
-        {facts.company ? " and company settings" : ""}
-        {fromSuite ? ", and synced from your MacTech suite profile" : ""}. Edit them where they
-        live — they can&apos;t be changed here.
+        These aggregates are pulled live from every published member profile and the company
+        settings. They update as members publish — they can&apos;t be edited here.
       </p>
     </div>
   );
 }
 
-/** Review/edit the narrative and confirm. Seeded either from a fresh draft or
- * from the saved statement. */
-function StatementReview({
+/** Review/edit the narrative and confirm. Managers only — the page doesn't
+ * render this for viewers. */
+function CompanyStatementReview({
   initial,
   facts,
   generateModel,
-  fromSuite,
   onCancel,
 }: {
   initial: {
@@ -167,9 +168,8 @@ function StatementReview({
     differentiators: string[];
     pastPerformanceHighlights: string[];
   };
-  facts: StatementFacts;
+  facts: CompanyStatementFacts;
   generateModel: string | null;
-  fromSuite: boolean;
   onCancel: () => void;
 }) {
   const [summary, setSummary] = useState(initial.professionalSummary);
@@ -177,20 +177,20 @@ function StatementReview({
   const [differentiators, setDifferentiators] = useState(initial.differentiators);
   const [pastPerformance, setPastPerformance] = useState(initial.pastPerformanceHighlights);
 
-  const [state, formAction] = useFormState<FormState, FormData>(saveStatementAction, { ok: false });
+  const [state, formAction] = useFormState<FormState, FormData>(saveCompanyStatementAction, {
+    ok: false,
+  });
 
-  // Built by the pure serialiser tested against the save schema — do not inline.
   const payload = useMemo(
     () =>
-      serialiseStatementPayload({
+      serialiseCompanyStatementPayload({
         professionalSummary: summary,
         coreCompetencies: competencies,
         differentiators,
         pastPerformanceHighlights: pastPerformance,
         generateModel,
-        syncedFromSuite: fromSuite,
       }),
-    [summary, competencies, differentiators, pastPerformance, generateModel, fromSuite],
+    [summary, competencies, differentiators, pastPerformance, generateModel],
   );
 
   if (state.ok) {
@@ -198,9 +198,10 @@ function StatementReview({
       <Card>
         <CardBody className="flex flex-col items-center gap-3 py-10 text-center">
           <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-          <h3 className="text-sm font-semibold text-slate-800">Capability statement saved</h3>
+          <h3 className="text-sm font-semibold text-slate-800">Company statement saved</h3>
           <p className="max-w-md text-xs text-slate-500">
-            It&apos;s built from the details you confirmed. Update it any time your profile changes.
+            It&apos;s built from what the team confirmed. Regenerate it as more members publish
+            their profiles and statements.
           </p>
         </CardBody>
       </Card>
@@ -215,21 +216,21 @@ function StatementReview({
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <p>
           {generateModel
-            ? "This draft was written by AI from your confirmed profile — it never adds facts you didn't provide. "
-            : "This draft was seeded from your confirmed profile. "}
+            ? "This draft was synthesised by AI from the team's confirmed profiles and statements — it never adds facts nobody provided. "
+            : "This draft was seeded from the team's confirmed content. "}
           Edit anything, then save. Nothing here is stored until you do.
         </p>
       </div>
 
       <Card>
-        <CardHeader title="Professional summary" />
+        <CardHeader title="Company summary" />
         <CardBody>
           <FormField label="Summary" name="professionalSummary">
             <TextArea
               rows={4}
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="Two or three sentences a customer reads first."
+              placeholder="Two to four sentences a customer reads first about MacTech."
             />
           </FormField>
         </CardBody>
@@ -240,17 +241,17 @@ function StatementReview({
         <CardBody className="space-y-5">
           <BulletEditor
             label="Core competencies"
-            hint="The capability areas a customer would search for."
+            hint="The company capability areas a customer would search for."
             rows={competencies}
             setRows={setCompetencies}
             placeholder="e.g. RMF / ATO package development"
           />
           <BulletEditor
             label="Differentiators"
-            hint="What sets you apart — certifications, clearance, customers served."
+            hint="What sets the company apart — team certifications, clearance depth, customers served."
             rows={differentiators}
             setRows={setDifferentiators}
-            placeholder="e.g. Active TS/SCI clearance"
+            placeholder="e.g. 6 cleared engineers on staff"
           />
         </CardBody>
       </Card>
@@ -258,7 +259,7 @@ function StatementReview({
       <Card>
         <CardHeader
           title="Past-performance highlights"
-          description="One line per engagement, in your words."
+          description="One line per engagement, de-duplicated across the team."
         />
         <CardBody>
           <BulletEditor
@@ -272,11 +273,11 @@ function StatementReview({
 
       <Card>
         <CardHeader
-          title="Included from your profile"
-          description="Facts drawn straight from confirmed sources."
+          title="Included from the team"
+          description="Aggregates drawn straight from published profiles."
         />
         <CardBody>
-          <FactsBlock facts={facts} fromSuite={fromSuite} />
+          <CompanyFactsBlock facts={facts} />
         </CardBody>
       </Card>
 
@@ -287,39 +288,50 @@ function StatementReview({
           <Trash2 className="mr-1.5 h-3.5 w-3.5" />
           Discard
         </Button>
-        <SubmitButton>Save capability statement</SubmitButton>
+        <SubmitButton>Save company statement</SubmitButton>
       </div>
     </form>
   );
 }
 
-/** Read-only view of a saved statement. Rendered inside the generate `<form>`,
- * so the regenerate button is a plain submit reflecting its pending state. */
-function StatementView({
+/** Read-only view of the saved statement. Rendered inside the generate form
+ * for managers so the regenerate button reflects pending state. */
+function CompanyStatementView({
   statement,
   facts,
+  canManage,
   onEdit,
 }: {
-  statement: StoredStatementView;
-  facts: StatementFacts;
+  statement: StoredCompanyStatementView;
+  facts: CompanyStatementFacts;
+  canManage: boolean;
   onEdit: () => void;
 }) {
   const { pending } = useFormStatus();
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={onEdit}>
-          <Pencil className="mr-1.5 h-3.5 w-3.5" />
-          Edit statement
-        </Button>
-        <Button type="submit" variant="ghost" disabled={pending}>
-          <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${pending ? "animate-spin" : ""}`} />
-          {pending ? "Drafting…" : "Regenerate with AI"}
-        </Button>
-      </div>
+      {canManage ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" onClick={onEdit}>
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            Edit statement
+          </Button>
+          <Button type="submit" variant="ghost" disabled={pending}>
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${pending ? "animate-spin" : ""}`} />
+            {pending ? "Drafting…" : "Regenerate with AI"}
+          </Button>
+        </div>
+      ) : null}
 
       <Card>
-        <CardHeader title="Capability statement" />
+        <CardHeader
+          title="Company capability statement"
+          description={
+            statement.confirmedAt
+              ? `Confirmed ${new Date(statement.confirmedAt).toLocaleDateString()} · built from ${statement.sourceHubUserIds.length} published member${statement.sourceHubUserIds.length === 1 ? "" : "s"}`
+              : undefined
+          }
+        />
         <CardBody className="space-y-5">
           {statement.professionalSummary ? (
             <p className="whitespace-pre-line text-sm text-slate-700">
@@ -378,35 +390,36 @@ function StatementView({
       </Card>
 
       <Card>
-        <CardHeader title="Included from your profile" />
+        <CardHeader title="Included from the team" />
         <CardBody>
-          <FactsBlock facts={facts} fromSuite={statement.hubSyncedAt != null} />
+          <CompanyFactsBlock facts={facts} />
         </CardBody>
       </Card>
     </div>
   );
 }
 
-export function CapabilityStatementSection({
+export function CompanyStatementSection({
   statement,
   facts,
+  canManage,
 }: {
-  statement: StoredStatementView | null;
-  facts: StatementFacts;
+  statement: StoredCompanyStatementView | null;
+  facts: CompanyStatementFacts;
+  canManage: boolean;
 }) {
-  const [genState, generate] = useFormState<StatementDraftState, FormData>(generateStatementAction, {
-    ok: false,
-  });
-  // "review" once a draft arrives or the member chooses to edit; otherwise the
-  // saved view (or the empty CTA when there's nothing saved yet).
+  const [genState, generate] = useFormState<CompanyDraftState, FormData>(
+    generateCompanyStatementAction,
+    { ok: false },
+  );
   const [mode, setMode] = useState<Mode | null>(null);
 
   const draft = genState.draft;
 
-  // A fresh draft moves us into review with the AI/seed content.
-  if (draft && mode !== "view") {
+  // A fresh draft moves a manager into review with the AI/seed content.
+  if (canManage && draft && mode !== "view") {
     return (
-      <StatementReview
+      <CompanyStatementReview
         initial={{
           professionalSummary: draft.draft.professionalSummary ?? "",
           coreCompetencies: draft.draft.coreCompetencies,
@@ -415,16 +428,15 @@ export function CapabilityStatementSection({
         }}
         facts={draft.facts}
         generateModel={draft.meta.model}
-        fromSuite={draft.meta.fromSuite}
         onCancel={() => setMode("view")}
       />
     );
   }
 
-  // Editing an existing saved statement by hand (no fresh draft).
-  if (mode === "review" && statement) {
+  // Hand-editing the saved statement (no fresh draft).
+  if (canManage && mode === "review" && statement) {
     return (
-      <StatementReview
+      <CompanyStatementReview
         initial={{
           professionalSummary: statement.professionalSummary ?? "",
           coreCompetencies: statement.coreCompetencies,
@@ -433,13 +445,21 @@ export function CapabilityStatementSection({
         }}
         facts={facts}
         generateModel={statement.generateModel}
-        fromSuite={statement.hubSyncedAt != null}
         onCancel={() => setMode("view")}
       />
     );
   }
 
   if (statement) {
+    const view = (
+      <CompanyStatementView
+        statement={statement}
+        facts={facts}
+        canManage={canManage}
+        onEdit={() => setMode("review")}
+      />
+    );
+    if (!canManage) return view;
     return (
       <form action={generate}>
         {genState.error ? (
@@ -447,33 +467,39 @@ export function CapabilityStatementSection({
             {genState.error}
           </p>
         ) : null}
-        <StatementView statement={statement} facts={facts} onEdit={() => setMode("review")} />
+        {view}
       </form>
     );
   }
 
-  // Nothing saved yet — the empty-state CTA.
+  // Nothing saved yet.
   return (
     <Card>
       <CardHeader
-        title="Capability statement"
-        description="Turn your profile into a customer-facing capability statement. We draft it from what you've confirmed — including your MacTech suite profile — and you edit and confirm every line before it's saved."
+        title="Company capability statement"
+        description="One statement for the whole company, built from the best of every published member profile and confirmed capability statement. AI drafts it; a manager reviews and confirms every line before it's saved."
       />
       <CardBody>
-        <form action={generate}>
-          {genState.error ? (
-            <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 ring-1 ring-red-200">
-              {genState.error}
-            </p>
-          ) : null}
-          <GenerateButton label="Draft my capability statement" />
-        </form>
+        {canManage ? (
+          <form action={generate}>
+            {genState.error ? (
+              <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 ring-1 ring-red-200">
+                {genState.error}
+              </p>
+            ) : null}
+            <GenerateButton label="Draft the company statement" />
+          </form>
+        ) : (
+          <p className="text-sm text-slate-500">
+            No company statement has been confirmed yet. A manager can draft one once members
+            publish their profiles.
+          </p>
+        )}
       </CardBody>
     </Card>
   );
 }
 
-/** Generate button that reflects the enclosing form's pending state. */
 function GenerateButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (

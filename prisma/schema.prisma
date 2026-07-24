@@ -1522,6 +1522,41 @@ model GovConCapabilityStatement {
   @@index([hubOrganizationId])
 }
 
+/// The org-wide Capability Statement — one per organization, built from the
+/// best of every published member profile and confirmed member statement.
+///
+/// Same shape and same rules as the member statement: this stores ONLY the
+/// manager-confirmed narrative. Hard facts (company CAGE/UEI, NAICS coverage,
+/// team certifications, clearance mix, federal past performance) are assembled
+/// live from confirmed sources at render time, never copied in. The AI drafts
+/// from member-confirmed content only; a manager reviews and confirms every
+/// line before it is stored.
+///
+/// `sourceHubUserIds` is provenance, not content: which members' published
+/// profiles fed the last confirmed draft, so coverage ("who is missing") can be
+/// compared against what the statement was actually built from.
+model GovConCompanyCapabilityStatement {
+  id                String @id @default(cuid())
+  hubOrganizationId String @unique
+
+  professionalSummary       String?
+  coreCompetencies          String[]
+  differentiators           String[]
+  pastPerformanceHighlights String[]
+
+  // --- Draft provenance ---
+  generatedAt   DateTime? // when an AI draft was last produced
+  generateModel String? // model id that produced the draft
+  /// Members whose published profiles/statements fed the confirmed draft.
+  sourceHubUserIds String[]
+  /// When a manager last confirmed and saved this statement, and who.
+  confirmedAt          DateTime?
+  confirmedByHubUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model GovConMemberSkill {
   id        String              @id @default(cuid())
   profileId String

@@ -214,6 +214,16 @@ export const DOCUMENT_STATUS_STYLES: Record<string, StatusStyle> = {
   ARCHIVED: make("Archived", "slate"),
 };
 
+/** Member capability-profile status on the Team roster. Keys are
+ * GovConProfileStatus values plus "not_started" for Hub members with no
+ * bizops profile row yet. */
+export const PROFILE_STATUS_STYLES: Record<string, StatusStyle> = {
+  published: make("Published", "green"),
+  in_review: make("In Review", "amber"),
+  draft: make("Draft", "slate"),
+  not_started: make("Not Started", "slate"),
+};
+
 /**
  * Sensitivity markings. CUI is deliberately red: these documents are registered
  * by reference only and must never be served from this app. The marking is the
