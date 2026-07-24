@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, FileWarning } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileWarning, Info } from "lucide-react";
 import { requireGovConContext } from "@/lib/auth/govcon-context";
 import { hasGovConPermission } from "@/lib/authz";
 import { GOVCON_PERMISSIONS } from "@/lib/permissions/govcon";
@@ -30,6 +30,7 @@ function CoverageRow({ entry }: { entry: TeamRosterEntry }) {
     <li className="flex items-center justify-between gap-2 py-1.5">
       <Link
         href={`/team/${encodeURIComponent(entry.hubUserId)}`}
+        title={entry.displayName ?? entry.hubUserId}
         className="min-w-0 truncate text-sm text-slate-700 hover:text-blue-600"
       >
         {entry.displayName ?? shortId(entry.hubUserId)}
@@ -77,6 +78,17 @@ export default async function CompanyStatementPage() {
               description={`${roster.coverage.contributing} of ${roster.coverage.total} members are feeding the company statement.`}
             />
             <CardBody>
+              {!roster.fromHub ? (
+                <div className="mb-2 flex items-start gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-900 ring-1 ring-blue-200">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <p>
+                    The Hub member roster isn&apos;t available (is{" "}
+                    <code className="font-mono">MACTECH_HUB_ROSTER_TOKEN</code> configured?), so
+                    names can&apos;t be shown and teammates who have never signed in here may be
+                    missing from this list.
+                  </p>
+                </div>
+              ) : null}
               {notContributing.length === 0 ? (
                 <p className="flex items-center gap-2 text-sm text-emerald-700">
                   <CheckCircle2 className="h-4 w-4" />
